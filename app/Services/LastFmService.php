@@ -16,7 +16,6 @@ class LastFmService
     }
 
     // Get the top tracks for a given user
-     
     public function getTopTracks($user)
     {
         $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
@@ -32,7 +31,6 @@ class LastFmService
     }
 
     // Get the top albums for a given user
-     
     public function getTopAlbums($user)
     {
         $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
@@ -48,7 +46,6 @@ class LastFmService
     }
 
     // Get the top artists for a given user
-     
     public function getTopArtists($user)
     {
         $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
@@ -64,7 +61,6 @@ class LastFmService
     }
 
     // Get a list of similar artists to a given artist
-    
     public function getSimilarArtists($artist)
     {
         $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
@@ -78,5 +74,4 @@ class LastFmService
 
         return json_decode($response->getBody()->getContents(), true);
     }
-
 }
