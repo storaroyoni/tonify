@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Http;
 use App\Models\User;
 
-// creating mock user
+// creating the mock user
 test('user can retrieve top songs', function () {
     $user = User::factory()->create();
 
@@ -18,7 +18,6 @@ test('user can retrieve top songs', function () {
             ]
         ], 200)
     ]);
-
     $this->actingAs($user)
          ->get('/user/top-songs')
          ->assertStatus(200)

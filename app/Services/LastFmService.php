@@ -11,12 +11,11 @@ class LastFmService
 
     public function __construct()
     {
-        // Retrieve the Last.fm API key from the .env file
         $this->apiKey = env('LASTFM_API_KEY');
         $this->client = new Client();
     }
 
-    // Get the top tracks for a given user.
+    // Get the top tracks for a given user
      
     public function getTopTracks($user)
     {
@@ -32,7 +31,7 @@ class LastFmService
         return json_decode($response->getBody()->getContents(), true);
     }
 
-    // Get the top albums for a given user.
+    // Get the top albums for a given user
      
     public function getTopAlbums($user)
     {
@@ -48,7 +47,7 @@ class LastFmService
         return json_decode($response->getBody()->getContents(), true);
     }
 
-    // Get the top artists for a given user.
+    // Get the top artists for a given user
      
     public function getTopArtists($user)
     {
@@ -64,7 +63,7 @@ class LastFmService
         return json_decode($response->getBody()->getContents(), true);
     }
 
-    // Get a list of similar artists to a given artist.
+    // Get a list of similar artists to a given artist
     
     public function getSimilarArtists($artist)
     {

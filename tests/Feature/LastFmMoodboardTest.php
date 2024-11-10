@@ -16,7 +16,6 @@ test('user can create a moodboard based on their music', function () {
             ]
         ], 200)
     ]);
-
     $this->actingAs($user)
          ->post('/user/moodboard')
          ->assertStatus(201)
