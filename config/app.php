@@ -123,4 +123,25 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel Socialite Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for integrating Socialite package for third-party login,
+    | including Last.fm. Make sure you have installed the package and updated
+    | the services configuration file with Last.fm details.
+    |
+    */
+
+    'socialite' => [
+        'providers' => [
+            'lastfm' => [
+                'client_id' => env('LASTFM_CLIENT_ID'),
+                'client_secret' => env('LASTFM_CLIENT_SECRET'),
+                'redirect' => env('LASTFM_REDIRECT_URI'),
+            ],
+        ],
+    ],
+
 ];
