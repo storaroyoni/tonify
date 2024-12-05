@@ -2,14 +2,20 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LastFmController;
 use App\Http\Controllers\StatsController;
 
+// lastfm route
+Route::get('lastfm/auth', [LastFmController::class, 'redirectToLastFm']);
+Route::get('lastfm/callback', [LastFmController::class, 'handleCallback'])->name('lastfm.callback');
+
+// top stats route
 Route::middleware(['auth'])->group(function () {
     Route::get('/top-stats', [StatsController::class, 'showTopStats']);
 });
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('dashboard');
 });
 
 Route::get('/dashboard', function () {
