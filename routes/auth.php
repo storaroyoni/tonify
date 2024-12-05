@@ -9,6 +9,9 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\ProfileController; // added for profile routes
+use App\Http\Controllers\DashboardController; // added for dashboard route
+use App\Http\Controllers\AccountController; // added for account deletion route
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -56,4 +59,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    // adding new routes for user profile management, account deletion, and dashboard
+    Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::delete('account', [AccountController::class, 'destroy'])->name('account.destroy');
+
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
+
