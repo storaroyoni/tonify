@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\StatsController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/top-stats', [StatsController::class, 'showTopStats']);
+});
 
 Route::get('/', function () {
     return view('welcome');

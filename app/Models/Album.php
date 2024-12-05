@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Pivots\AlbumUser;
 use Illuminate\Database\Eloquent\Model;
 
 class Album extends Model
@@ -16,5 +17,12 @@ class Album extends Model
     public function artist()
     {
         return $this->belongsTo(Artist::class);
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class)
+                    ->using(AlbumUser::class)
+                    ->withPivot('play_count');
     }
 }
