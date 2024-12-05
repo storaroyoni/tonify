@@ -45,4 +45,29 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function topAlbums()
+    {
+        return $this->belongsToMany(Album::class)
+                    ->using(AlbumUser::class)
+                    ->withPivot('play_count')
+                    ->orderByDesc('pivot_play_count');
+    }
+
+    public function topArtists()
+    {
+        return $this->belongsToMany(Artist::class)
+                    ->using(ArtistUser::class)
+                    ->withPivot('play_count')
+                    ->orderByDesc('pivot_play_count');
+    }
+
+    public function topSongs()
+    {
+        return $this->belongsToMany(Song::class)
+                    ->using(SongUser::class)
+                    ->withPivot('play_count')
+                    ->orderByDesc('pivot_play_count');
+    }
 }
+

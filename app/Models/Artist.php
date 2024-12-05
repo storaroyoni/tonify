@@ -2,19 +2,27 @@
 
 namespace App\Models;
 
+use App\Models\Pivots\ArtistUser;
 use Illuminate\Database\Eloquent\Model;
 
 class Artist extends Model
 {
-    protected $fillable = ['name', 'bio', 'profile_picture'];
-
-    public function songs()
-    {
-        return $this->hasMany(Song::class);
-    }
+    protected $fillable = ['name'];
 
     public function albums()
     {
         return $this->hasMany(Album::class);
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class)
+                    ->using(ArtistUser::class)
+                    ->withPivot('play_count');
+    }
+
+    public function songs()
+    {
+        return $this->hasMany(Song::class);
     }
 }
