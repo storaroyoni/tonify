@@ -28,4 +28,9 @@ Route::get('/connect-lastfm', function () {
     return view('connect-lastfm');
 })->name('connect-lastfm');
 
+// profile routes 
+Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit')->middleware('auth');
+Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update')->middleware('auth');
+Route::get('/profile/{username}', [ProfileController::class, 'show'])->name('profile.show');
+
 require __DIR__.'/auth.php';

@@ -40,6 +40,9 @@
                             @csrf
                         </form>
                     @endguest
+                    @auth
+                        <a href="{{ route('profile.show', auth()->user()->name) }}" class="nav-link">My Profile</a>
+                    @endauth
                 </ul>
             </div>
         </div>
