@@ -87,7 +87,14 @@ class LastFmController extends Controller
                 Auth::login($user);
             }
 
-            $this->fetchUserTopTracks($user);
+            $this->fetchUserStats($user);
+
+            // store the stats in session
+            session([
+                'user_top_tracks' => $lastfm->getUserTopTracks($username),
+                'user_top_artists' => $lastfm->getUserTopArtists($username),
+                'user_top_albums' => $lastfm->getUserTopAlbums($username)
+            ]);
 
             return redirect('/dashboard')->with('success', 'Successfully authenticated with Last.fm');
 
@@ -120,12 +127,13 @@ class LastFmController extends Controller
         return md5($signatureString);
     }
 
-    private function fetchUserTopTracks($user)
+    private function fetchUserStats($user)
     {
         $apiKey = config('services.lastfm.api_key');
 
         try {
-            $response = Http::get('https://ws.audioscrobbler.com/2.0/', [
+            // Fetch top tracks
+            $tracksResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
                 'method' => 'user.gettoptracks',
                 'user' => $user->lastfm_username,
                 'api_key' => $apiKey,
@@ -134,28 +142,70 @@ class LastFmController extends Controller
                 'limit' => 50
             ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
-                
-                if (isset($data['toptracks']['track'])) {
-                    $topTracks = collect($data['toptracks']['track'])->map(function ($track) {
-                        return [
-                            'name' => $track['name'],
-                            'artist' => $track['artist']['name'],
-                            'playcount' => $track['playcount'],
-                            'url' => $track['url'],
-                        ];
-                    })->toArray();
-                    session(['user_top_tracks' => $topTracks]);
-                    
-                    Log::info('Top tracks fetched successfully', [
-                        'user' => $user->id,
-                        'tracks_count' => count($topTracks)
-                    ]);
-                }
+            // Fetch top artists
+            $artistsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'user.gettopartists',
+                'user' => $user->lastfm_username,
+                'api_key' => $apiKey,
+                'format' => 'json',
+                'period' => 'overall',
+                'limit' => 20
+            ]);
+
+            // Fetch top albums
+            $albumsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'user.gettopalbums',
+                'user' => $user->lastfm_username,
+                'api_key' => $apiKey,
+                'format' => 'json',
+                'period' => 'overall',
+                'limit' => 20
+            ]);
+
+            if ($tracksResponse->successful() && isset($tracksResponse['toptracks']['track'])) {
+                $topTracks = collect($tracksResponse['toptracks']['track'])->map(function ($track) {
+                    return [
+                        'name' => $track['name'],
+                        'artist' => $track['artist']['name'],
+                        'playcount' => $track['playcount'],
+                        'url' => $track['url'],
+                    ];
+                })->toArray();
+                session(['user_top_tracks' => $topTracks]);
             }
+
+            if ($artistsResponse->successful() && isset($artistsResponse['topartists']['artist'])) {
+                $topArtists = collect($artistsResponse['topartists']['artist'])->map(function ($artist) {
+                    return [
+                        'name' => $artist['name'],
+                        'playcount' => $artist['playcount'],
+                        'url' => $artist['url'],
+                    ];
+                })->toArray();
+                session(['user_top_artists' => $topArtists]);
+            }
+
+            if ($albumsResponse->successful() && isset($albumsResponse['topalbums']['album'])) {
+                $topAlbums = collect($albumsResponse['topalbums']['album'])->map(function ($album) {
+                    return [
+                        'name' => $album['name'],
+                        'artist' => $album['artist']['name'],
+                        'playcount' => $album['playcount'],
+                        'url' => $album['url'],
+                    ];
+                })->toArray();
+                session(['user_top_albums' => $topAlbums]);
+            }
+
+            Log::info('Stats fetched successfully', [
+                'user' => $user->id,
+                'tracks_count' => count($topTracks ?? []),
+                'artists_count' => count($topArtists ?? []),
+                'albums_count' => count($topAlbums ?? [])
+            ]);
+
         } catch (\Exception $e) {
-            Log::error('Error fetching top tracks', [
+            Log::error('Error fetching stats', [
                 'user' => $user->id,
                 'error' => $e->getMessage()
             ]);
