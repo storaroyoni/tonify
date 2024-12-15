@@ -26,6 +26,63 @@
     @endif
     </div>
 
+    @if(isset($stats['now_playing']))
+        <div class="now-playing-section">
+            <div class="now-playing">
+                <div class="pulse-animation"></div>
+                <div class="track-info">
+                    <h3>Now Playing</h3>
+                    <div class="track">
+                        @if(isset($stats['now_playing']['image']))
+                            <img src="{{ $stats['now_playing']['image'] }}" alt="Album Art">
+                        @endif
+                        <div>
+                            <span class="name">{{ $stats['now_playing']['name'] }}</span>
+                            <span class="artist">by {{ $stats['now_playing']['artist'] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <div class="stats-overview">
+        <div class="total-scrobbles">
+            <h3>Total Scrobbles</h3>
+            <div class="count">{{ number_format($stats['total_scrobbles'] ?? 0) }}</div>
+        </div>
+    </div>
+
+    <div class="recent-tracks">
+        <h3>Recent Tracks</h3>
+        <div class="tracks-grid">
+            @foreach(array_slice($stats['recent_tracks'] ?? [], 0, 4) as $track)
+                <div class="track-card">
+                    @if(isset($track['image']))
+                        <img src="{{ $track['image'] }}" alt="Album Art">
+                    @endif
+                    <div class="track-info">
+                        <span class="name">{{ $track['name'] }}</span>
+                        <span class="artist">{{ $track['artist'] }}</span>
+                        <span class="played-at">{{ $track['played_at'] }}</span>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    <div class="weekly-chart">
+        <h3>This Week's Top Artists</h3>
+        <div class="chart-grid">
+            @foreach($stats['weekly_chart'] as $artist)
+                <div class="chart-item">
+                    <span class="name">{{ $artist['name'] }}</span>
+                    <span class="count">{{ $artist['playcount'] }} plays</span>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
     <div class="music-stats">
         <div class="stats-grid">
             <!-- Top Artists -->
@@ -197,6 +254,157 @@
         width: 100%;
         text-align: center;
     }
+}
+
+.now-playing-section {
+    margin: 20px 0;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.now-playing {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.pulse-animation {
+    width: 10px;
+    height: 10px;
+    background: #1DB954;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(29, 185, 84, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0);
+    }
+}
+
+.now-playing .track {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.now-playing .track img {
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.now-playing .track .name {
+    font-weight: 600;
+    display: block;
+}
+
+.now-playing .track .artist {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.total-scrobbles {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.total-scrobbles .count {
+    font-size: 2em;
+    font-weight: bold;
+    color: #1DB954;
+}
+
+.recent-tracks, .weekly-chart {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 20px 0;
+}
+
+.tracks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.track-card {
+    display: flex;
+    gap: 15px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+.track-card img {
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.track-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.track-info .name {
+    font-weight: 600;
+}
+
+.track-info .artist {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.track-info .played-at {
+    color: #999;
+    font-size: 0.8em;
+}
+
+.chart-grid {
+    display: grid;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.chart-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.chart-item:last-child {
+    border-bottom: none;
+}
+
+.chart-item .count {
+    color: #666;
 }
 </style>
 @endsection 

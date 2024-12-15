@@ -7,25 +7,129 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class ProfileController extends Controller
 {
     public function show($username)
     {
         $user = User::where('name', $username)->firstOrFail();
-                if ($user->lastfm_username) {
-            $this->fetchUserStats($user);
+        $stats = [];
+        
+        if ($user->lastfm_username) {
+            $stats = $this->fetchUserStats($user);
         }
 
-        return view('profile', compact('user'));
+        return view('profile', compact('user', 'stats'));
     }
 
     private function fetchUserStats($user)
     {
         $apiKey = config('services.lastfm.api_key');
-
+        
         try {
-            // Fetch top tracks
+            $nowPlayingResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'user.getrecenttracks',
+                'user' => $user->lastfm_username,
+                'api_key' => $apiKey,
+                'format' => 'json',
+                'limit' => 1
+            ]);
+
+            \Log::info('Now Playing Response:', [
+                'data' => $nowPlayingResponse->json()
+            ]);
+
+            // check for now playing
+            if ($nowPlayingResponse->successful()) {
+                $track = $nowPlayingResponse['recenttracks']['track'][0] ?? null;
+                
+                if ($track) {
+                    \Log::info('Track details:', [
+                        'name' => $track['name'],
+                        'artist' => $track['artist']['#text'] ?? 'no artist',
+                        'has_nowplaying' => isset($track['@attr']['nowplaying']),
+                        'attr' => $track['@attr'] ?? 'no attr'
+                    ]);
+
+                    if (isset($track['@attr']['nowplaying']) && $track['@attr']['nowplaying'] === 'true') {
+                        $stats['now_playing'] = [
+                            'name' => $track['name'],
+                            'artist' => $track['artist']['#text'],
+                            'album' => $track['album']['#text'] ?? '',
+                            'image' => $track['image'][2]['#text'] ?? null,  // Using index 2 for medium size
+                            'url' => $track['url']
+                        ];
+                    }
+                }
+            }
+
+            $recentResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'user.getrecenttracks',
+                'user' => $user->lastfm_username,
+                'api_key' => $apiKey,
+                'format' => 'json',
+                'limit' => 10
+            ]);
+
+            $infoResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'user.getinfo',
+                'user' => $user->lastfm_username,
+                'api_key' => $apiKey,
+                'format' => 'json'
+            ]);
+
+            // Get Weekly Chart
+            $weeklyResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'user.getweeklyartistchart',
+                'user' => $user->lastfm_username,
+                'api_key' => $apiKey,
+                'format' => 'json'
+            ]);
+
+            if ($recentResponse->successful() && isset($recentResponse['recenttracks']['track'])) {
+                $tracks = collect($recentResponse['recenttracks']['track']);
+                
+                    $recentTracks = $tracks
+                    ->filter(function ($track) {
+                        return !isset($track['@attr']['nowplaying']);
+                    })
+                    ->unique(function ($track) {
+                        return $track['name'] . ' - ' . $track['artist']['#text'];
+                    })
+                    ->map(function ($track) {
+                        return [
+                            'name' => $track['name'],
+                            'artist' => $track['artist']['#text'],
+                            'album' => $track['album']['#text'],
+                            'image' => $track['image'][2]['#text'] ?? null,
+                            'url' => $track['url'],
+                            'played_at' => isset($track['date']) ? Carbon::createFromTimestamp($track['date']['uts'])->diffForHumans() : null
+                        ];
+                    })
+                    ->take(4)
+                    ->values()
+                    ->toArray();
+            }
+
+            // total scrobbles
+            if ($infoResponse->successful() && isset($infoResponse['user'])) {
+                $totalScrobbles = $infoResponse['user']['playcount'];
+            }
+
+            // weekly chart
+            if ($weeklyResponse->successful() && isset($weeklyResponse['weeklyartistchart']['artist'])) {
+                $weeklyChart = collect($weeklyResponse['weeklyartistchart']['artist'])
+                    ->take(10)
+                    ->map(function ($artist) {
+                        return [
+                            'name' => $artist['name'],
+                            'playcount' => $artist['playcount'],
+                            'url' => $artist['url']
+                        ];
+                    })->toArray();
+            }
+
             $tracksResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
                 'method' => 'user.gettoptracks',
                 'user' => $user->lastfm_username,
@@ -35,7 +139,6 @@ class ProfileController extends Controller
                 'limit' => 50
             ]);
 
-            // Fetch top artists
             $artistsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
                 'method' => 'user.gettopartists',
                 'user' => $user->lastfm_username,
@@ -90,11 +193,22 @@ class ProfileController extends Controller
                 session(['user_top_albums' => $topAlbums]);
             }
 
+            return [
+                'now_playing' => $stats['now_playing'] ?? null,
+                'recent_tracks' => $recentTracks ?? [],
+                'total_scrobbles' => $totalScrobbles ?? 0,
+                'weekly_chart' => $weeklyChart ?? [],
+                'top_tracks' => $topTracks ?? [],
+                'top_artists' => $topArtists ?? [],
+                'top_albums' => $topAlbums ?? [],
+                'fetched_at' => now()
+            ];
+
         } catch (\Exception $e) {
-            Log::error('Error fetching Last.fm stats', [
-                'user' => $user->id,
+            \Log::error('Error fetching Last.fm stats', [
                 'error' => $e->getMessage()
             ]);
+            return [];
         }
     }
 
