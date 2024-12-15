@@ -9,6 +9,7 @@ class Artist extends Model
 {
     protected $fillable = ['name'];
 
+   
     public function albums()
     {
         return $this->hasMany(Album::class);
@@ -24,5 +25,10 @@ class Artist extends Model
     public function songs()
     {
         return $this->hasMany(Song::class);
+    }
+
+    public function topSongs()
+    {
+        return $this->hasMany(Song::class)->orderBy('rating', 'desc')->limit(5);
     }
 }

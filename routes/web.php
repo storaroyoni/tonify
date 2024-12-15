@@ -1,31 +1,31 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LastFmController;
 use App\Http\Controllers\StatsController;
+use App\Http\Controllers\DashboardController;
+use Illuminate\Support\Facades\Route;
 
-// lastfm route
-Route::get('lastfm/auth', [LastFmController::class, 'redirectToLastFm']);
-Route::get('lastfm/callback', [LastFmController::class, 'handleCallback'])->name('lastfm.callback');
+// last.fm routes
+Route::get('/auth/lastfm', [LastFmController::class, 'redirectToLastFm'])->name('lastfm.auth');
+Route::get('/lastfm/callback', [LastFmController::class, 'handleCallback'])->name('lastfm.callback');
 
-// top stats route
-Route::middleware(['auth'])->group(function () {
-    Route::get('/top-stats', [StatsController::class, 'showTopStats']);
-});
-
+// application main routes
 Route::get('/', function () {
     return view('dashboard');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
+// authenticated routes
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/top-stats', [StatsController::class, 'showTopStats']);
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+Route::get('/connect-lastfm', function () {
+    return view('connect-lastfm');
+})->name('connect-lastfm');
 
 require __DIR__.'/auth.php';

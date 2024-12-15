@@ -9,11 +9,7 @@ class Album extends Model
 {
     protected $fillable = ['title', 'artist_id', 'cover_image', 'release_date'];
 
-    public function songs()
-    {
-        return $this->hasMany(Song::class);
-    }
-
+    
     public function artist()
     {
         return $this->belongsTo(Artist::class);
@@ -24,5 +20,10 @@ class Album extends Model
         return $this->belongsToMany(User::class)
                     ->using(AlbumUser::class)
                     ->withPivot('play_count');
+    }
+
+    public function songs()
+    {
+        return $this->hasMany(Song::class);
     }
 }

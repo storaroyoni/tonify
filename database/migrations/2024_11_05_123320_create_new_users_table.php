@@ -11,10 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('new_users', function (Blueprint $table) {
+        Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('fn');
-            $table->string('ln');
+            $table->string('fn');  // First Name
+            $table->string('ln');  // Last Name
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+
+            // LastFM Integration Fields
+            $table->string('lastfm_username')->nullable();
+            $table->string('lastfm_session_key')->nullable();
+            $table->timestamp('lastfm_connected_at')->nullable();
+
+            // Optional: Additional user preference fields
+            $table->string('profile_picture')->nullable();
+            $table->text('bio')->nullable();
+
             $table->timestamps();
         });
     }
@@ -24,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('new_users');
+        Schema::dropIfExists('users');
     }
 };

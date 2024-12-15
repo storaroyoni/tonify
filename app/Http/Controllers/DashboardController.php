@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Artist;
+use App\Models\Album;
+use App\Models\Song;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
 
 class DashboardController extends Controller
 {
-    
     public function index()
     {
-        $user = Auth::user();
+        $user = auth()->user();
+                if ($user && $user->isLastfmConnected()) {
+            $topTracks = session('user_top_tracks', []);
+            
+            return view('dashboard', compact('topTracks'));
+        }
 
-        
-        return response()->json([
-            'message' => 'welcome to your dashboard',
-            'user' => $user,
-        ]);
+        return view('dashboard');
     }
 }
