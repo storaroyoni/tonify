@@ -11,25 +11,28 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('fn');  // First Name
-            $table->string('ln');  // Last Name
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-
-            // LastFM Integration Fields
-            $table->string('lastfm_username')->nullable();
-            $table->string('lastfm_session_key')->nullable();
-            $table->timestamp('lastfm_connected_at')->nullable();
-
-            // Optional: Additional user preference fields
-            $table->string('profile_picture')->nullable();
-            $table->text('bio')->nullable();
-
-            $table->timestamps();
+        Schema::table('users', function (Blueprint $table) {
+            if (!Schema::hasColumn('users', 'fn')) {
+                $table->string('fn')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'ln')) {
+                $table->string('ln')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'lastfm_username')) {
+                $table->string('lastfm_username')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'lastfm_session_key')) {
+                $table->string('lastfm_session_key')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'lastfm_connected_at')) {
+                $table->timestamp('lastfm_connected_at')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'profile_picture')) {
+                $table->string('profile_picture')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'bio')) {
+                $table->text('bio')->nullable();
+            }
         });
     }
 
@@ -38,6 +41,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn([
+                'fn',
+                'ln',
+                'lastfm_username',
+                'lastfm_session_key',
+                'lastfm_connected_at',
+                'profile_picture',
+                'bio'
+            ]);
+        });
     }
 };

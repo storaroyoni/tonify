@@ -15,6 +15,8 @@ class User extends Authenticatable
         'email',
         'password',
         'lastfm_username',
+        'profile_picture',
+        'bio',
         'lastfm_session_key',
         'lastfm_connected_at',
     ];
