@@ -10,39 +10,31 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'name', 
-        'email', 
+        'name',
+        'email',
         'password',
-        'lastfm_id',
-        'lastfm_session_key', // Added this attribute
+        'lastfm_username',
+        'lastfm_session_key',
+        'lastfm_connected_at',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
+        'lastfm_session_key'
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $dates = [
+        'lastfm_connected_at' 
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'lastfm_connected_at' => 'datetime', 
         ];
     }
 
@@ -69,5 +61,14 @@ class User extends Authenticatable
                     ->withPivot('play_count')
                     ->orderByDesc('pivot_play_count');
     }
-}
 
+    public function isLastfmConnected(): bool
+    {
+        return !is_null($this->lastfm_username) && !is_null($this->lastfm_session_key);
+    }
+
+    public function lastfmData()
+    {
+        return $this->hasOne(LastfmData::class);
+    }
+}

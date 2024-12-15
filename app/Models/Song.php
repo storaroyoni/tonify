@@ -25,4 +25,9 @@ class Song extends Model
                     ->using(SongUser::class)
                     ->withPivot('play_count');
     }
+
+    public function lastfmData()
+    {
+        return $this->belongsTo(LastfmData::class);
+    }
 }
