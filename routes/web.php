@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\LastFmController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 
 // last.fm routes
@@ -11,9 +12,7 @@ Route::get('/auth/lastfm', [LastFmController::class, 'redirectToLastFm'])->name(
 Route::get('/lastfm/callback', [LastFmController::class, 'handleCallback'])->name('lastfm.callback');
 
 // application main routes
-Route::get('/', function () {
-    return view('dashboard');
-});
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // authenticated routes
 Route::middleware('auth')->group(function () {
