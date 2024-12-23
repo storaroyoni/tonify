@@ -23,7 +23,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
 Route::get('/connect-lastfm', function () {
     return view('connect-lastfm');
 })->name('connect-lastfm');
@@ -37,3 +36,4 @@ Route::get('/song/{name}/{artist}', [App\Http\Controllers\SongController::class,
 Route::get('/artist/{name}', [App\Http\Controllers\ArtistController::class, 'show'])->name('artist.show');
 
 require __DIR__.'/auth.php';
+

@@ -28,7 +28,7 @@ class SongController extends Controller
             'autocorrect' => 1
         ]);
 
-        $spotifyUrl = "https://open.spotify.com/search/" . urlencode($artist . " " . $name);
+        $spotifyUrl = "https://open.spotify.com/search/" . urlencode($name . " " . $artist);
 
         $similarResponse = Http::get("http://ws.audioscrobbler.com/2.0/", [
             'method' => 'track.getSimilar',

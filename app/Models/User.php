@@ -73,4 +73,44 @@ class User extends Authenticatable
     {
         return $this->hasOne(LastfmData::class);
     }
+
+    public function getRecentTracks($limit = 10)
+    {
+        return Song::where('user_id', $this->id)
+                   ->orderBy('played_at', 'desc')
+                   ->limit($limit)
+                   ->get();
+    }
+
+    public function getTopArtists($limit = 5)
+    {
+        return Artist::select('artists.*')
+                    ->join('songs', 'songs.artist_id', '=', 'artists.id')
+                    ->where('songs.user_id', $this->id)
+                    ->groupBy('artists.id')
+                    ->orderByRaw('COUNT(*) DESC')
+                    ->limit($limit)
+                    ->get();
+    }
+
+    public function getTopAlbums($limit = 5)
+    {
+        return Album::select('albums.*')
+                   ->join('songs', 'songs.album_id', '=', 'albums.id')
+                   ->where('songs.user_id', $this->id)
+                   ->groupBy('albums.id')
+                   ->orderByRaw('COUNT(*) DESC')
+                   ->limit($limit)
+                   ->get();
+    }
+
+    public function getTopTracks($limit = 5)
+    {
+        return Song::where('user_id', $this->id)
+                   ->select('songs.*')
+                   ->groupBy('songs.id')
+                   ->orderByRaw('COUNT(*) DESC')
+                   ->limit($limit)
+                   ->get();
+    }
 }
