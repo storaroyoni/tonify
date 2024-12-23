@@ -71,23 +71,12 @@
         </div>
     </div>
 
-    <div class="weekly-chart">
-        <h3>This Week's Top Artists</h3>
-        <div class="chart-grid">
-            @foreach($stats['weekly_chart'] as $artist)
-                <div class="chart-item">
-                    <span class="name">{{ $artist['name'] }}</span>
-                    <span class="count">{{ $artist['playcount'] }} plays</span>
-                </div>
-            @endforeach
-        </div>
-    </div>
 
     <div class="music-stats">
         <div class="stats-grid">
             <!-- Top Artists -->
             <div class="stat-card">
-                <h3>Top Artists</h3>
+                <h3>This Week's Top Artists</h3>
                 @foreach(session('user_top_artists', []) as $artist)
                     <div class="stat-item">
                         <span class="name">{{ $artist['name'] }}</span>
@@ -98,7 +87,7 @@
 
             <!-- Top Albums -->
             <div class="stat-card">
-                <h3>Top Albums</h3>
+                <h3>This Week's Top Albums</h3>
                 @foreach(session('user_top_albums', []) as $album)
                     <div class="stat-item">
                         <span class="name">{{ $album['name'] }}</span>
@@ -110,7 +99,7 @@
 
             <!-- Top Tracks -->
             <div class="stat-card">
-                <h3>Top Tracks</h3>
+                <h3>This Week'sTop Tracks</h3>
                 @foreach(session('user_top_tracks', []) as $track)
                     <div class="stat-item">
                         <span class="name">{{ $track['name'] }}</span>
@@ -121,6 +110,39 @@
             </div>
         </div>
     </div>
+
+    @if(isset($stats['listening_stats']))
+        <div class="mt-8">
+            <h2 class="text-xl font-bold mb-4">Listening Activity</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Weekly Overview -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-semibold text-gray-700 mb-2">This Week</h3>
+                    <div class="space-y-2">
+                        <p class="text-sm text-gray-600">
+                            Total Tracks: <span class="font-medium text-gray-900">{{ $stats['listening_stats']['total_week'] }}</span>
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            Daily Average: <span class="font-medium text-gray-900">{{ $stats['listening_stats']['daily_average'] }} tracks</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Most Active Hours -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-semibold text-gray-700 mb-2">Most Active Hours</h3>
+                    <div class="space-y-2">
+                        @foreach($stats['listening_stats']['most_active_hours'] as $hour)
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">{{ $hour['hour'] }}</span>
+                                <span class="text-sm font-medium text-gray-900">{{ $hour['count'] }} tracks</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
 
 <style>

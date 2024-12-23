@@ -135,7 +135,7 @@ class ProfileController extends Controller
                 'user' => $user->lastfm_username,
                 'api_key' => $apiKey,
                 'format' => 'json',
-                'period' => 'overall',
+                'period' => '7day',
                 'limit' => 50
             ]);
 
@@ -144,53 +144,100 @@ class ProfileController extends Controller
                 'user' => $user->lastfm_username,
                 'api_key' => $apiKey,
                 'format' => 'json',
-                'period' => 'overall',
+                'period' => '7day',
                 'limit' => 20
             ]);
 
-            // Fetch top albums
             $albumsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
                 'method' => 'user.gettopalbums',
                 'user' => $user->lastfm_username,
                 'api_key' => $apiKey,
                 'format' => 'json',
-                'period' => 'overall',
+                'period' => '7day',
                 'limit' => 20
             ]);
 
             if ($tracksResponse->successful() && isset($tracksResponse['toptracks']['track'])) {
-                $topTracks = collect($tracksResponse['toptracks']['track'])->map(function ($track) {
-                    return [
-                        'name' => $track['name'],
-                        'artist' => $track['artist']['name'],
-                        'playcount' => $track['playcount'],
-                        'url' => $track['url'],
-                    ];
-                })->toArray();
+                $topTracks = collect($tracksResponse['toptracks']['track'])
+                    ->take(5)
+                    ->map(function ($track) {
+                        return [
+                            'name' => $track['name'],
+                            'artist' => $track['artist']['name'],
+                            'playcount' => $track['playcount'],
+                            'url' => $track['url'],
+                        ];
+                    })->toArray();
                 session(['user_top_tracks' => $topTracks]);
             }
 
             if ($artistsResponse->successful() && isset($artistsResponse['topartists']['artist'])) {
-                $topArtists = collect($artistsResponse['topartists']['artist'])->map(function ($artist) {
-                    return [
-                        'name' => $artist['name'],
-                        'playcount' => $artist['playcount'],
-                        'url' => $artist['url'],
-                    ];
-                })->toArray();
+                $topArtists = collect($artistsResponse['topartists']['artist'])
+                    ->take(5)
+                    ->map(function ($artist) {
+                        return [
+                            'name' => $artist['name'],
+                            'playcount' => $artist['playcount'],
+                            'url' => $artist['url'],
+                        ];
+                    })->toArray();
                 session(['user_top_artists' => $topArtists]);
             }
 
             if ($albumsResponse->successful() && isset($albumsResponse['topalbums']['album'])) {
-                $topAlbums = collect($albumsResponse['topalbums']['album'])->map(function ($album) {
-                    return [
-                        'name' => $album['name'],
-                        'artist' => $album['artist']['name'],
-                        'playcount' => $album['playcount'],
-                        'url' => $album['url'],
-                    ];
-                })->toArray();
+                $topAlbums = collect($albumsResponse['topalbums']['album'])
+                    ->take(5)
+                    ->map(function ($album) {
+                        return [
+                            'name' => $album['name'],
+                            'artist' => $album['artist']['name'],
+                            'playcount' => $album['playcount'],
+                            'url' => $album['url'],
+                        ];
+                    })->toArray();
                 session(['user_top_albums' => $topAlbums]);
+            }
+
+            $recentTracksResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'user.getrecenttracks',
+                'user' => $user->lastfm_username,
+                'api_key' => $apiKey,
+                'format' => 'json',
+                'limit' => 200,  
+                'from' => now()->subWeek()->timestamp 
+            ]);
+
+            if ($recentTracksResponse->successful() && isset($recentTracksResponse['recenttracks']['track'])) {
+                $tracks = collect($recentTracksResponse['recenttracks']['track'])
+                    ->filter(function($track) {
+                        return !isset($track['@attr']['nowplaying']);
+                    });
+
+                $dailyListening = $tracks->groupBy(function($track) {
+                    return Carbon::createFromTimestamp($track['date']['uts'])->format('Y-m-d');
+                })->map->count();
+
+                $hourlyDistribution = $tracks->groupBy(function($track) {
+                    return Carbon::createFromTimestamp($track['date']['uts'])->format('H');
+                })->map->count();
+
+                $mostActiveHours = collect($hourlyDistribution)
+                    ->sortDesc()
+                    ->take(3)
+                    ->map(function($count, $hour) {
+                        return [
+                            'hour' => sprintf('%02d:00', $hour),
+                            'count' => $count
+                        ];
+                    });
+
+                // Add to stats array
+                $stats['listening_stats'] = [
+                    'daily_average' => round($tracks->count() / 7),  // Average tracks per day
+                    'total_week' => $tracks->count(),  // Total tracks this week
+                    'most_active_hours' => $mostActiveHours,
+                    'daily_breakdown' => $dailyListening
+                ];
             }
 
             return [
@@ -201,6 +248,7 @@ class ProfileController extends Controller
                 'top_tracks' => $topTracks ?? [],
                 'top_artists' => $topArtists ?? [],
                 'top_albums' => $topAlbums ?? [],
+                'listening_stats' => $stats['listening_stats'] ?? null,
                 'fetched_at' => now()
             ];
 
