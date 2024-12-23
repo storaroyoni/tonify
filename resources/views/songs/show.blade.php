@@ -40,44 +40,37 @@
                     <div class="flex-1">
                         <h1 class="text-2xl font-bold mb-2">{{ $song['name'] }}</h1>
                         <p class="text-gray-600 mb-2">by {{ $song['artist']['name'] }}</p>
+                        
                         @if(isset($song['album']))
                             <p class="text-gray-500 text-sm mb-4">
                                 Album: {{ $song['album']['title'] }}
                             </p>
                         @endif
-                        @if(isset($song['wiki']))
-                            <div class="mt-4">
-                                <div x-data="{ expanded: false }">
-                                    <p class="text-gray-600" x-show="!expanded">
-                                        {{ Str::limit($song['wiki']['summary'] ?? '', 200) }}
-                                        @if(isset($song['wiki']['summary']) && strlen($song['wiki']['summary']) > 200)
-                                            <a href="{{ $spotifyUrl }}" 
-                                               target="_blank"
-                                               class="text-green-600 hover:text-green-800 font-medium ml-1">
-                                                Listen on Spotify
-                                            </a>
-                                        @endif
-                                    </p>
-                                    <p class="text-gray-600" x-show="expanded">
-                                        {{ $song['wiki']['summary'] ?? '' }}
-                                        <a href="{{ $spotifyUrl }}" 
-                                           target="_blank"
-                                           class="text-green-600 hover:text-green-800 font-medium ml-1">
-                                            Listen on Spotify
-                                        </a>
-                                    </p>
-                                    
-                                    @if(isset($song['wiki']['summary']) && strlen($song['wiki']['summary']) > 200)
-                                        <button 
-                                            @click="expanded = !expanded"
-                                            class="mt-2 text-blue-600 hover:text-blue-800 font-medium"
-                                            x-text="expanded ? 'Read Less' : 'Read More'"
-                                        >
-                                        </button>
-                                    @endif
-                                </div>
+
+                        <div x-data="{ expanded: false }">
+                            <div class="prose max-w-none">
+                                <p class="text-gray-600" x-show="!expanded">
+                                    {{ Str::limit(preg_replace('/<a\s.*?>.*?<\/a>/i', '', $song['wiki']['summary'] ?? ''), 200) }}
+                                </p>
+                                <p class="text-gray-600" x-show="expanded">
+                                    {{ preg_replace('/<a\s.*?>.*?<\/a>/i', '', $song['wiki']['summary'] ?? '') }}
+                                </p>
                             </div>
-                        @endif
+                            
+                            @if(isset($song['wiki']['summary']) && strlen($song['wiki']['summary']) > 200)
+                                <button 
+                                    @click="expanded = !expanded"
+                                    class="mt-2 text-blue-600 hover:text-blue-800 font-medium"
+                                    x-text="expanded ? 'Read Less' : 'Read More'">
+                                </button>
+                            @endif
+                        </div>
+
+                        <a href="{{ $spotifyUrl }}" 
+                           target="_blank"
+                           class="inline-block mt-4 text-green-600 hover:text-green-800 font-medium">
+                            Listen on Spotify
+                        </a>
                     </div>
                 </div>
             </div>
