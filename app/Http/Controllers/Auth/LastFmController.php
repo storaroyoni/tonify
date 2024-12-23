@@ -129,20 +129,15 @@ class LastFmController extends Controller
     private function fetchUserStats($user)
     {
         try {
-            // User-specific data stays in session
             session(['user_top_tracks' => $topTracks]);
             session(['user_top_artists' => $topArtists]);
             session(['user_top_albums' => $topAlbums]);
-
-            // Get cached trending tracks
             $trendingTracks = $this->musicCache->getTrendingTracks();
 
-            // Get cached artist info for top artists
             $artistsInfo = collect($topArtists)->map(function ($artist) {
                 return $this->musicCache->getArtistInfo($artist['name']);
             });
 
-            // Make data available to views
             view()->share('trending_tracks', $trendingTracks);
             view()->share('artists_info', $artistsInfo);
 
