@@ -4,86 +4,98 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $globalCharts = Cache::remember('global_charts', 3600, function () {
-            $apiKey = config('services.lastfm.api_key');
-            $charts = [];
+        $apiKey = config('services.lastfm.api_key');
+        
+        $tracksResponse = Http::get('http://ws.audioscrobbler.com/2.0/', [
+            'method' => 'chart.gettoptracks',
+            'api_key' => $apiKey,
+            'format' => 'json',
+            'limit' => 12
+        ]);
 
-            try {
-                // weekly top tracks
-                $topTracksResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                    'method' => 'chart.gettoptracks',
-                    'api_key' => $apiKey,
-                    'format' => 'json',
-                    'limit' => 9
-                ]);
+        $artistsResponse = Http::get('http://ws.audioscrobbler.com/2.0/', [
+            'method' => 'chart.gettopartists',
+            'api_key' => $apiKey,
+            'format' => 'json',
+            'limit' => 8
+        ]);
 
-                if ($topTracksResponse->successful()) {
-                    $charts['topTracks'] = collect($topTracksResponse['tracks']['track'])
-                        ->map(function ($track) {
-                            return [
-                                'name' => $track['name'],
-                                'artist' => $track['artist']['name'],
-                                'playcount' => $track['playcount'],
-                                'image' => $track['image'][2]['#text'] ?? null,
-                                'url' => $track['url']
-                            ];
-                        })->toArray();
-                }
+        $tracks = [];
+        foreach ($tracksResponse->json()['tracks']['track'] ?? [] as $track) {
+            $trackInfoResponse = Http::get('http://ws.audioscrobbler.com/2.0/', [
+                'method' => 'track.getInfo',
+                'api_key' => $apiKey,
+                'artist' => $track['artist']['name'],
+                'track' => $track['name'],
+                'format' => 'json'
+            ]);
 
-                // trending artists
-                $artistsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                    'method' => 'chart.gettopartists',
-                    'api_key' => $apiKey,
-                    'format' => 'json',
-                    'limit' => 8
-                ]);
-
-                if ($artistsResponse->successful()) {
-                    $charts['trendingArtists'] = collect($artistsResponse['artists']['artist'])
-                        ->map(function ($artist) {
-                            return [
-                                'name' => $artist['name'],
-                                'listeners' => $artist['listeners'],
-                                'image' => $artist['image'][2]['#text'] ?? null,
-                                'url' => $artist['url']
-                            ];
-                        })->toArray();
-                }
-
-                // top genres
-                $tagsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                    'method' => 'chart.gettoptags',
-                    'api_key' => $apiKey,
-                    'format' => 'json',
-                    'limit' => 12
-                ]);
-
-                if ($tagsResponse->successful()) {
-                    $charts['genres'] = collect($tagsResponse['tags']['tag'])
-                        ->map(function ($tag) {
-                            return [
-                                'name' => $tag['name'],
-                                'count' => $tag['reach'],
-                                'url' => $tag['url']
-                            ];
-                        })->toArray();
-                }
-
-            } catch (\Exception $e) {
-                \Log::error('Error fetching global charts', [
-                    'error' => $e->getMessage()
-                ]);
+            $trackInfo = $trackInfoResponse->json()['track'] ?? null;
+            $albumImage = null;
+            
+            if (isset($trackInfo['album']['image'])) {
+                $albumImage = end($trackInfo['album']['image'])['#text'];
+            }
+            
+            if ($albumImage) {
+                $tracks[] = [
+                    'name' => $track['name'],
+                    'artist' => $track['artist']['name'],
+                    'playcount' => $track['playcount'],
+                    'image' => $albumImage
+                ];
             }
 
-            return $charts;
-        });
+            if (count($tracks) >= 6) break;
+        }
 
-        return view('home', compact('globalCharts'));
+        $artists = [];
+        foreach ($artistsResponse->json()['artists']['artist'] ?? [] as $artist) {
+            $albumsResponse = Http::get('http://ws.audioscrobbler.com/2.0/', [
+                'method' => 'artist.getTopAlbums',
+                'artist' => $artist['name'],
+                'api_key' => $apiKey,
+                'format' => 'json',
+                'limit' => 1
+            ]);
+
+            if (isset($albumsResponse->json()['topalbums']['album'][0]['image'])) {
+                $albumImages = $albumsResponse->json()['topalbums']['album'][0]['image'];
+                $largestImage = end($albumImages)['#text'];
+
+                if ($largestImage) {
+                    $artists[] = [
+                        'name' => $artist['name'],
+                        'listeners' => $artist['listeners'],
+                        'image' => $largestImage
+                    ];
+                }
+            }
+        }
+
+        $tagsResponse = Http::get('http://ws.audioscrobbler.com/2.0/', [
+            'method' => 'tag.getTopTags',
+            'api_key' => $apiKey,
+            'format' => 'json',
+            'limit' => 6
+        ]);
+
+        $genres = array_slice(array_map(function($tag) {
+            return [
+                'name' => $tag['name'],
+                'count' => $tag['count'] ?? 0
+            ];
+        }, $tagsResponse->json()['toptags']['tag'] ?? []), 0, 6);
+
+        return view('home', ['globalCharts' => [
+            'topTracks' => $tracks,
+            'trendingArtists' => $artists,
+            'genres' => $genres
+        ]]);
     }
 }

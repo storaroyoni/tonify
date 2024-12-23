@@ -19,7 +19,6 @@
                     @auth
                         <a href="{{ route('dashboard') }}" class="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
                         <a href="{{ route('profile.show', Auth::user()->name) }}" class="flex items-center">
-                            <!-- profile pic -->
                             <div class="w-6 h-6 rounded-full overflow-hidden">
                                 @if(Auth::user()->profile_picture)
                                     <img src="{{ Storage::url(Auth::user()->profile_picture) }}" alt="Profile Picture" class="w-full h-full object-cover">
@@ -54,18 +53,29 @@
             <h3 class="text-2xl font-bold mb-6">Weekly Top Tracks</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($globalCharts['topTracks'] ?? [] as $track)
-                    <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition p-4">
+                    <a href="{{ route('song.show', ['name' => $track['name'], 'artist' => $track['artist']]) }}" 
+                       class="bg-white rounded-lg shadow-sm hover:shadow-md transition p-4">
                         <div class="flex items-center">
-                            @if($track['image'])
-                                <img src="{{ $track['image'] }}" alt="{{ $track['name'] }}" class="w-20 h-20 rounded-md">
-                            @endif
+                            <div class="flex-shrink-0 w-20 h-20">
+                                @if($track['image'])
+                                    <img src="{{ $track['image'] }}" 
+                                         alt="{{ $track['name'] }}" 
+                                         class="w-full h-full object-cover rounded-md">
+                                @else
+                                    <div class="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
                             <div class="ml-4">
                                 <h4 class="font-semibold">{{ $track['name'] }}</h4>
                                 <p class="text-gray-600">{{ $track['artist'] }}</p>
                                 <p class="text-sm text-gray-500">{{ number_format($track['playcount']) }} plays</p>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
         </div>
@@ -74,18 +84,31 @@
             <h3 class="text-2xl font-bold mb-6">Trending Artists</h3>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 @foreach($globalCharts['trendingArtists'] ?? [] as $artist)
-                    <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition p-4 text-center">
-                        @if($artist['image'])
-                            <img src="{{ $artist['image'] }}" alt="{{ $artist['name'] }}" class="w-32 h-32 rounded-full mx-auto mb-4">
-                        @endif
-                        <h4 class="font-semibold">{{ $artist['name'] }}</h4>
-                        <p class="text-sm text-gray-500">{{ number_format($artist['listeners']) }} listeners</p>
-                    </div>
+                    <a href="{{ route('artist.show', ['name' => $artist['name']]) }}" 
+                       class="bg-white rounded-lg shadow-sm hover:shadow-md transition p-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 w-16 h-16">
+                                @if($artist['image'])
+                                    <img src="{{ $artist['image'] }}" 
+                                         alt="{{ $artist['name'] }}" 
+                                         class="w-full h-full object-cover rounded-full">
+                                @else
+                                    <div class="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="font-semibold">{{ $artist['name'] }}</h4>
+                                <p class="text-sm text-gray-500">{{ number_format($artist['listeners']) }} listeners</p>
+                            </div>
+                        </div>
+                    </a>
                 @endforeach
             </div>
         </div>
-
-        <!-- Genre Trends -->
         <div>
             <h3 class="text-2xl font-bold mb-6">Genre Trends</h3>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">

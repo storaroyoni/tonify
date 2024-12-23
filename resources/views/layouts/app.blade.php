@@ -8,6 +8,7 @@
     <title>{{ config('app.name', 'Laravel') }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
