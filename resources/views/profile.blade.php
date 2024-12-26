@@ -38,27 +38,52 @@
                     </a>
                 @else
                     @if(auth()->user()->isFriendsWith($user))
-                        <span class="inline-flex items-center px-4 py-2 bg-green-100 border border-green-200 rounded-md font-semibold text-xs text-green-700 uppercase tracking-widest">
-                            Friends
-                        </span>
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="inline-flex items-center px-4 py-2 bg-green-100 border border-green-200 rounded-md font-semibold text-xs text-green-700 uppercase tracking-widest">
+                                Friends
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            
+                            <div x-show="open" 
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                                <form action="{{ route('friend.remove', $user) }}" method="POST" class="block w-full">
+                                    @csrf
+                                    <button type="submit" class="w-full px-4 py-2 text-left text-xs font-semibold text-red-600 hover:bg-gray-50">
+                                        Remove Friend
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     @elseif(auth()->user()->hasFriendRequestPending($user))
                         <span class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-200 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest">
                             Request Sent
                         </span>
                     @elseif(auth()->user()->hasFriendRequestReceived($user))
                         <div class="flex space-x-2">
-                            <form action="{{ route('friend.accept', $user->receivedFriendRequests()->where('sender_id', auth()->id())->first()) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-600">
-                                    Accept
-                                </button>
-                            </form>
-                            <form action="{{ route('friend.reject', $user->receivedFriendRequests()->where('sender_id', auth()->id())->first()) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600">
-                                    Reject
-                                </button>
-                            </form>
+                            @php
+                                $friendRequest = $user->sentFriendRequests()
+                                    ->where('receiver_id', auth()->id())
+                                    ->where('status', 'pending')
+                                    ->first();
+                            @endphp
+                            
+                            @if($friendRequest)
+                                <form action="{{ route('friend.accept', ['request' => $friendRequest->id]) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-400 border border-transparent rounded-md font-semibold text-xs text-gray-900 uppercase tracking-widest hover:bg-green-500">
+                                        Accept
+                                    </button>
+                                </form>
+                                <form action="{{ route('friend.reject', ['request' => $friendRequest->id]) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-400 border border-transparent rounded-md font-semibold text-xs text-gray-900 uppercase tracking-widest hover:bg-red-500">
+                                        Reject
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     @else
                         <form action="{{ route('friend.request', $user) }}" method="POST" class="inline">
@@ -188,30 +213,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    @endif
-
-    @if(auth()->check() && auth()->id() !== $user->id)
-        <div class="friend-request-section">
-            @if(auth()->user()->isFriendsWith($user))
-                <span class="friends-badge">Friends</span>
-            @elseif(auth()->user()->hasFriendRequestPending($user))
-                <span class="pending-badge">Friend Request Sent</span>
-            @elseif(auth()->user()->hasFriendRequestReceived($user))
-                <form action="{{ route('friend.accept', $user->receivedFriendRequests()->where('sender_id', auth()->id())->first()) }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="accept-button">Accept Friend Request</button>
-                </form>
-                <form action="{{ route('friend.reject', $user->receivedFriendRequests()->where('sender_id', auth()->id())->first()) }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="reject-button">Reject</button>
-                </form>
-            @else
-                <form action="{{ route('friend.request', $user) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="add-friend-button">Add Friend</button>
-                </form>
-            @endif
         </div>
     @endif
 </div>

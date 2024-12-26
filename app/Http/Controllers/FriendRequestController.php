@@ -45,4 +45,23 @@ class FriendRequestController extends Controller
 
         return back()->with('success', 'Friend request rejected!');
     }
+
+    public function remove(User $user)
+    {
+        if (auth()->user()->isFriendsWith($user)) {
+            FriendRequest::where(function ($query) use ($user) {
+                $query->where('sender_id', auth()->id())
+                      ->where('receiver_id', $user->id)
+                      ->where('status', 'accepted');
+            })->orWhere(function ($query) use ($user) {
+                $query->where('sender_id', $user->id)
+                      ->where('receiver_id', auth()->id())
+                      ->where('status', 'accepted');
+            })->delete();
+
+            return back()->with('success', 'Friend removed successfully');
+        }
+
+        return back()->with('error', 'User is not your friend');
+    }
 } 

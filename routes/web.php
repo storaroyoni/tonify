@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/friend-request/{user}', [FriendRequestController::class, 'send'])->name('friend.request');
     Route::post('/friend-request/{request}/accept', [FriendRequestController::class, 'accept'])->name('friend.accept');
     Route::post('/friend-request/{request}/reject', [FriendRequestController::class, 'reject'])->name('friend.reject');
+    Route::post('/friend-remove/{user}', [FriendRequestController::class, 'remove'])->name('friend.remove');
 });
 Route::get('/connect-lastfm', function () {
     return view('connect-lastfm');

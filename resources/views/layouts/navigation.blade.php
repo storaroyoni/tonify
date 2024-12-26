@@ -28,6 +28,85 @@
                         Dashboard
                     </a>
 
+                    <div class="relative" x-data="{ notificationsOpen: false }">
+                        <button @click="notificationsOpen = !notificationsOpen" class="relative p-1 text-gray-600 hover:text-gray-900">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            
+                            @php
+                                $pendingRequests = Auth::user()->receivedFriendRequests()->where('status', 'pending')->count();
+                            @endphp
+                            
+                            @if($pendingRequests > 0)
+                                <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full" style="min-width: 18px; min-height: 18px;">
+                                    {{ $pendingRequests }}
+                                </span>
+                            @endif
+                        </button>
+
+                        <div x-show="notificationsOpen" 
+                             @click.away="notificationsOpen = false"
+                             class="absolute right-0 w-80 mt-2 bg-white rounded-md shadow-lg overflow-hidden z-50">
+                            <div class="py-2">
+                                @php
+                                    $requests = Auth::user()->receivedFriendRequests()
+                                        ->where('status', 'pending')
+                                        ->with('sender')
+                                        ->get();
+                                @endphp
+
+                                @if($requests->count() > 0)
+                                    @foreach($requests as $request)
+                                        <div class="px-4 py-3 hover:bg-gray-50 flex items-center justify-between">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-8 w-8">
+                                                    @if($request->sender->profile_picture)
+                                                        <img class="h-8 w-8 rounded-full object-cover" 
+                                                             src="{{ Storage::url($request->sender->profile_picture) }}" 
+                                                             alt="">
+                                                    @else
+                                                        <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                                            <span class="text-sm font-medium text-gray-500">
+                                                                {{ substr($request->sender->name, 0, 1) }}
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                <div class="ml-3">
+                                                    <p class="text-sm font-medium text-gray-900">
+                                                        {{ $request->sender->name }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-500">
+                                                        Sent you a friend request
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="flex space-x-2">
+                                                <form action="{{ route('friend.accept', $request) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-gray-900 bg-green-400 rounded-md hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm">
+                                                        Accept
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('friend.reject', $request) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-gray-900 bg-red-400 rounded-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-sm">
+                                                        Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <div class="px-4 py-3 text-sm text-gray-500">
+                                        No pending friend requests
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="ml-3 relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center">
                             @if(Auth::user()->profile_picture)
@@ -40,7 +119,6 @@
                                 </div>
                             @endif
                         </button>
-
                         <div x-show="open" 
                              @click.away="open = false"
                              class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
