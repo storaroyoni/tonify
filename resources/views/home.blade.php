@@ -3,40 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Tonify - Global Music Trends</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-100">
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-12">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <h1 class="text-lg font-bold text-gray-800">Tonify</h1>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    @auth
-                        <a href="{{ route('dashboard') }}" class="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
-                        <a href="{{ route('profile.show', Auth::user()->name) }}" class="flex items-center">
-                            <div class="w-6 h-6 rounded-full overflow-hidden">
-                                @if(Auth::user()->profile_picture)
-                                    <img src="{{ Storage::url(Auth::user()->profile_picture) }}" alt="Profile Picture" class="w-full h-full object-cover">
-                                @else
-                                    <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                                        <span class="text-gray-500 text-xs">{{ substr(Auth::user()->name, 0, 1) }}</span>
-                                    </div>
-                                @endif
-                            </div>
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" class="text-sm text-gray-600 hover:text-gray-900">Login</a>
-                        <a href="{{ route('register') }}" class="text-sm text-gray-600 hover:text-gray-900">Register</a>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('layouts.navigation')
+
     <div class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
         <div class="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
             <h2 class="text-4xl font-extrabold tracking-tight text-center">

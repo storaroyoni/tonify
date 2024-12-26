@@ -6,6 +6,7 @@ use App\Http\Controllers\StatsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SongController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
 // last.fm routes
@@ -34,6 +35,8 @@ Route::get('/profile/{username}', [ProfileController::class, 'show'])->name('pro
 
 Route::get('/song/{name}/{artist}', [App\Http\Controllers\SongController::class, 'show'])->name('song.show');
 Route::get('/artist/{name}', [App\Http\Controllers\ArtistController::class, 'show'])->name('artist.show');
+
+Route::get('/search', [SearchController::class, 'search'])->name('search');
 
 require __DIR__.'/auth.php';
 
