@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SongController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\FriendRequestController;
 use Illuminate\Support\Facades\Route;
 
 // last.fm routes
@@ -23,6 +24,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/friend-request/{user}', [FriendRequestController::class, 'send'])->name('friend.request');
+    Route::post('/friend-request/{request}/accept', [FriendRequestController::class, 'accept'])->name('friend.accept');
+    Route::post('/friend-request/{request}/reject', [FriendRequestController::class, 'reject'])->name('friend.reject');
 });
 Route::get('/connect-lastfm', function () {
     return view('connect-lastfm');
