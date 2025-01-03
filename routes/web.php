@@ -10,6 +10,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\FriendRequestController;
 use App\Http\Controllers\ProfileCommentController;
 use App\Http\Controllers\CommentReplyController;
+use App\Http\Controllers\Api\ProfileCommentController as ApiProfileCommentController;
 use Illuminate\Support\Facades\Route;
 
 // last.fm routes
@@ -46,10 +47,12 @@ Route::get('/artist/{name}', [App\Http\Controllers\ArtistController::class, 'sho
 Route::get('/search', [SearchController::class, 'search'])->name('search');
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/profile/{user}/comment', [ProfileCommentController::class, 'store'])->name('profile.comment.store');
-    Route::delete('/profile/comment/{comment}', [ProfileCommentController::class, 'destroy'])->name('profile.comment.destroy');
-    Route::post('/comment/{comment}/reply', [CommentReplyController::class, 'store'])->name('comment.reply.store');
-    Route::delete('/reply/{reply}', [CommentReplyController::class, 'destroy'])->name('comment.reply.destroy');
+    Route::get('/api/profile/{user}/comments', [ApiProfileCommentController::class, 'index']);
+    
+    Route::post('/profile/{user}/comment', [ProfileCommentController::class, 'store']);
+    Route::delete('/profile/comment/{comment}', [ProfileCommentController::class, 'destroy']);
+    Route::post('/comment/{comment}/reply', [CommentReplyController::class, 'store']);
+    Route::delete('/reply/{reply}', [CommentReplyController::class, 'destroy']);
 });
 
 require __DIR__.'/auth.php';

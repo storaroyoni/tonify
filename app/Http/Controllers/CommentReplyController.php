@@ -10,31 +10,34 @@ class CommentReplyController extends Controller
 {
     public function store(Request $request, ProfileComment $comment)
     {
-        if (!auth()->user()->isFriendsWith($comment->profileUser) && auth()->id() !== $comment->profile_user_id) {
-            return back()->with('error', 'Only friends and the profile owner can reply to comments');
+        if (!auth()->user()->isFriendsWith($comment->profileUser) && 
+            auth()->id() !== $comment->profile_user_id) {
+            return response()->json(['error' => 'Only friends can reply to comments'], 403);
         }
 
         $validated = $request->validate([
             'content' => 'required|string|max:500'
         ]);
 
-        CommentReply::create([
+        $reply = CommentReply::create([
             'content' => $validated['content'],
             'user_id' => auth()->id(),
             'comment_id' => $comment->id
         ]);
 
-        return back()->with('success', 'Reply posted successfully!');
+        $reply->load('user');
+
+        return response()->json($reply);
     }
 
     public function destroy(CommentReply $reply)
     {
         if (auth()->id() === $reply->user_id || 
-            auth()->id() === $reply->comment->profileUser->id) {
+            auth()->id() === $reply->comment->profile_user_id) {
             $reply->delete();
-            return back()->with('success', 'Reply deleted successfully!');
+            return response()->json(['message' => 'Reply deleted successfully']);
         }
 
-        return back()->with('error', 'Unauthorized action');
+        return response()->json(['error' => 'Unauthorized action'], 403);
     }
 } 

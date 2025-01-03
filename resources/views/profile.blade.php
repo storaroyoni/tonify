@@ -217,18 +217,18 @@
     @endif
 
     <!-- Comments Section -->
-    <div class="mt-8 bg-white rounded-lg shadow p-6">
+    <div class="mt-8 bg-white rounded-lg shadow p-6" 
+         x-data="comments()">
         <h2 class="text-2xl font-bold mb-6">Comments</h2>
 
         @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
             <!-- Comment Form -->
-            <form action="{{ route('profile.comment.store', $user) }}" method="POST" class="mb-6">
+            <form @submit.prevent="submitComment" class="mb-6">
                 @csrf
                 <div x-data="{ comment: '' }">
                     <textarea 
-                        name="content" 
-                        rows="3" 
                         x-model="comment"
+                        rows="3" 
                         class="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200"
                         placeholder="Write a comment..."
                     ></textarea>
@@ -245,76 +245,68 @@
 
         <!-- Comments List -->
         <div class="space-y-6">
-            @foreach($user->profileComments()->latest()->get() as $comment)
+            <template x-for="comment in comments" :key="comment.id">
                 <div class="bg-gray-50 rounded-lg p-4">
-                    <!-- Comment Content -->
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center">
-                            @if($comment->user->profile_picture)
-                                <img src="{{ asset('storage/' . $comment->user->profile_picture) }}" 
-                                     alt="{{ $comment->user->name }}" 
+                            <template x-if="comment.user.profile_picture">
+                                <img :src="'/storage/' + comment.user.profile_picture" 
+                                     :alt="comment.user.name" 
                                      class="w-8 h-8 rounded-full mr-2">
-                            @else
-                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                                    {{ strtoupper(substr($comment->user->name, 0, 1)) }}
+                            </template>
+                            <template x-if="!comment.user.profile_picture">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2"
+                                     x-text="comment.user.name.charAt(0).toUpperCase()">
                                 </div>
-                            @endif
-                            <span class="font-medium">{{ $comment->user->name }}</span>
+                            </template>
+                            <span class="font-medium" x-text="comment.user.name"></span>
                         </div>
-                        @if(auth()->id() === $comment->user_id || auth()->id() === $user->id)
-                            <form action="{{ route('profile.comment.destroy', $comment) }}" method="POST" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-500 hover:text-red-600 text-sm">
-                                    Delete
-                                </button>
-                            </form>
-                        @endif
+                        <template x-if="canDeleteComment(comment)">
+                            <button @click="deleteComment(comment.id)" 
+                                    class="text-red-500 hover:text-red-600 text-sm">
+                                Delete
+                            </button>
+                        </template>
                     </div>
-                    <p class="text-gray-700 mb-2">{{ $comment->content }}</p>
-                    <span class="text-sm text-gray-500">{{ $comment->created_at->diffForHumans() }}</span>
+                    <p class="text-gray-700 mb-2" x-text="comment.content"></p>
+                    <span class="text-sm text-gray-500" x-text="formatDate(comment.created_at)"></span>
 
                     <!-- Replies Section -->
                     <div class="mt-4 ml-8 space-y-4">
-                        @foreach($comment->replies()->latest()->get() as $reply)
+                        <template x-for="reply in comment.replies" :key="reply.id">
                             <div class="bg-white rounded-lg p-3 shadow-sm">
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="flex items-center">
-                                        @if($reply->user->profile_picture)
-                                            <img src="{{ asset('storage/' . $reply->user->profile_picture) }}" 
-                                                 alt="{{ $reply->user->name }}" 
+                                        <template x-if="reply.user.profile_picture">
+                                            <img :src="'/storage/' + reply.user.profile_picture" 
+                                                 :alt="reply.user.name" 
                                                  class="w-6 h-6 rounded-full mr-2">
-                                        @else
-                                            <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                                                {{ strtoupper(substr($reply->user->name, 0, 1)) }}
+                                        </template>
+                                        <template x-if="!reply.user.profile_picture">
+                                            <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mr-2"
+                                                 x-text="reply.user.name.charAt(0).toUpperCase()">
                                             </div>
-                                        @endif
-                                        <span class="font-medium text-sm">{{ $reply->user->name }}</span>
+                                        </template>
+                                        <span class="font-medium text-sm" x-text="reply.user.name"></span>
                                     </div>
-                                    @if(auth()->id() === $reply->user_id || auth()->id() === $user->id)
-                                        <form action="{{ route('comment.reply.destroy', $reply) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-500 hover:text-red-600 text-xs">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    @endif
+                                    <template x-if="canDeleteReply(reply)">
+                                        <button @click="deleteReply(reply.id, comment.id)" 
+                                                class="text-red-500 hover:text-red-600 text-xs">
+                                            Delete
+                                        </button>
+                                    </template>
                                 </div>
-                                <p class="text-gray-700 text-sm">{{ $reply->content }}</p>
-                                <span class="text-xs text-gray-500">{{ $reply->created_at->diffForHumans() }}</span>
+                                <p class="text-gray-700 text-sm" x-text="reply.content"></p>
+                                <span class="text-xs text-gray-500" x-text="formatDate(reply.created_at)"></span>
                             </div>
-                        @endforeach
+                        </template>
 
-                        <!-- Reply Form -->
                         @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
                             <div x-data="{ replyContent: '' }">
-                                <form action="{{ route('comment.reply.store', $comment) }}" method="POST" class="mt-2">
-                                    @csrf
+                                <form @submit.prevent="submitReply($event, comment.id)" class="mt-2">
                                     <div class="flex items-center space-x-2">
                                         <input 
                                             type="text" 
-                                            name="content" 
                                             x-model="replyContent"
                                             class="flex-1 border-gray-300 rounded-lg text-sm focus:border-purple-500 focus:ring focus:ring-purple-200"
                                             placeholder="Write a reply...">
@@ -331,7 +323,7 @@
                         @endif
                     </div>
                 </div>
-            @endforeach
+            </template>
         </div>
     </div>
 </div>
@@ -620,4 +612,104 @@
     color: #666;
 }
 </style>
+
+<script>
+function comments() {
+    return {
+        comments: [],
+        async init() {
+            await this.fetchComments();
+        },
+        async fetchComments() {
+            const response = await fetch(`/api/profile/{{ $user->id }}/comments`);
+            this.comments = await response.json();
+        },
+        async submitComment(e) {
+            const content = e.target.querySelector('textarea').value;
+            const response = await fetch(`/profile/{{ $user->id }}/comment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ content })
+            });
+
+            if (response.ok) {
+                e.target.querySelector('textarea').value = '';
+                await this.fetchComments();
+            }
+        },
+        async submitReply(event, commentId) {
+            const content = event.target.querySelector('input').value;
+            
+            try {
+                const response = await fetch(`/comment/${commentId}/reply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    event.target.querySelector('input').value = '';
+                    await this.fetchComments();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Something went wrong');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to post reply');
+            }
+        },
+        async deleteComment(commentId) {
+            if (!confirm('Are you sure you want to delete this comment?')) return;
+
+            const response = await fetch(`/profile/comment/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+
+            if (response.ok) {
+                await this.fetchComments();
+            }
+        },
+        async deleteReply(replyId, commentId) {
+            if (!confirm('Are you sure you want to delete this reply?')) return;
+
+            const response = await fetch(`/reply/${replyId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+
+            if (response.ok) {
+                await this.fetchComments();
+            }
+        },
+        canDeleteComment(comment) {
+            return {{ auth()->id() }} === comment.user_id || {{ auth()->id() }} === {{ $user->id }};
+        },
+        canDeleteReply(reply) {
+            return {{ auth()->id() }} === reply.user_id || {{ auth()->id() }} === {{ $user->id }};
+        },
+        formatDate(date) {
+            return new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    }
+}
+</script>
 @endsection 
