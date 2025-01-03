@@ -37,7 +37,7 @@
                         Edit Profile
                     </a>
                 @else
-                    @if(auth()->user()->isFriendsWith($user))
+                    @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="inline-flex items-center px-4 py-2 bg-green-100 border border-green-200 rounded-md font-semibold text-xs text-green-700 uppercase tracking-widest">
                                 Friends
@@ -215,6 +215,125 @@
             </div>
         </div>
     @endif
+
+    <!-- Comments Section -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-6">Comments</h2>
+
+        @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
+            <!-- Comment Form -->
+            <form action="{{ route('profile.comment.store', $user) }}" method="POST" class="mb-6">
+                @csrf
+                <div x-data="{ comment: '' }">
+                    <textarea 
+                        name="content" 
+                        rows="3" 
+                        x-model="comment"
+                        class="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200"
+                        placeholder="Write a comment..."
+                    ></textarea>
+                    <button 
+                        type="submit" 
+                        x-show="comment.length > 0"
+                        x-transition
+                        class="mt-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition duration-150 ease-in-out font-semibold">
+                        Post Comment
+                    </button>
+                </div>
+            </form>
+        @endif
+
+        <!-- Comments List -->
+        <div class="space-y-6">
+            @foreach($user->profileComments()->latest()->get() as $comment)
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <!-- Comment Content -->
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            @if($comment->user->profile_picture)
+                                <img src="{{ asset('storage/' . $comment->user->profile_picture) }}" 
+                                     alt="{{ $comment->user->name }}" 
+                                     class="w-8 h-8 rounded-full mr-2">
+                            @else
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                                    {{ strtoupper(substr($comment->user->name, 0, 1)) }}
+                                </div>
+                            @endif
+                            <span class="font-medium">{{ $comment->user->name }}</span>
+                        </div>
+                        @if(auth()->id() === $comment->user_id || auth()->id() === $user->id)
+                            <form action="{{ route('profile.comment.destroy', $comment) }}" method="POST" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-500 hover:text-red-600 text-sm">
+                                    Delete
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                    <p class="text-gray-700 mb-2">{{ $comment->content }}</p>
+                    <span class="text-sm text-gray-500">{{ $comment->created_at->diffForHumans() }}</span>
+
+                    <!-- Replies Section -->
+                    <div class="mt-4 ml-8 space-y-4">
+                        @foreach($comment->replies()->latest()->get() as $reply)
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center">
+                                        @if($reply->user->profile_picture)
+                                            <img src="{{ asset('storage/' . $reply->user->profile_picture) }}" 
+                                                 alt="{{ $reply->user->name }}" 
+                                                 class="w-6 h-6 rounded-full mr-2">
+                                        @else
+                                            <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                                                {{ strtoupper(substr($reply->user->name, 0, 1)) }}
+                                            </div>
+                                        @endif
+                                        <span class="font-medium text-sm">{{ $reply->user->name }}</span>
+                                    </div>
+                                    @if(auth()->id() === $reply->user_id || auth()->id() === $user->id)
+                                        <form action="{{ route('comment.reply.destroy', $reply) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-500 hover:text-red-600 text-xs">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                                <p class="text-gray-700 text-sm">{{ $reply->content }}</p>
+                                <span class="text-xs text-gray-500">{{ $reply->created_at->diffForHumans() }}</span>
+                            </div>
+                        @endforeach
+
+                        <!-- Reply Form -->
+                        @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
+                            <div x-data="{ replyContent: '' }">
+                                <form action="{{ route('comment.reply.store', $comment) }}" method="POST" class="mt-2">
+                                    @csrf
+                                    <div class="flex items-center space-x-2">
+                                        <input 
+                                            type="text" 
+                                            name="content" 
+                                            x-model="replyContent"
+                                            class="flex-1 border-gray-300 rounded-lg text-sm focus:border-purple-500 focus:ring focus:ring-purple-200"
+                                            placeholder="Write a reply...">
+                                        <button 
+                                            type="submit"
+                                            x-show="replyContent.length > 0"
+                                            x-transition
+                                            class="px-3 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700">
+                                            Reply
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
 </div>
 
 <style>
