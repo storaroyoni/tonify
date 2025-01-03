@@ -113,4 +113,52 @@ class User extends Authenticatable
                    ->limit($limit)
                    ->get();
     }
+
+    public function sentFriendRequests()
+    {
+        return $this->hasMany(FriendRequest::class, 'sender_id');
+    }
+
+    public function receivedFriendRequests()
+    {
+        return $this->hasMany(FriendRequest::class, 'receiver_id');
+    }
+
+    public function friends()
+    {
+        return $this->belongsToMany(User::class, 'friend_requests', 'sender_id', 'receiver_id')
+                    ->wherePivot('status', 'accepted')
+                    ->union(
+                        $this->belongsToMany(User::class, 'friend_requests', 'receiver_id', 'sender_id')
+                            ->wherePivot('status', 'accepted')
+                    );
+    }
+
+    public function hasFriendRequestPending(User $user)
+    {
+        return $this->sentFriendRequests()
+                    ->where('receiver_id', $user->id)
+                    ->where('status', 'pending')
+                    ->exists();
+    }
+
+    public function hasFriendRequestReceived(User $user)
+    {
+        return $this->receivedFriendRequests()
+                    ->where('sender_id', $user->id)
+                    ->where('status', 'pending')
+                    ->exists();
+    }
+
+    public function isFriendsWith(User $user)
+    {
+        return $this->friends()
+                    ->where('users.id', $user->id)
+                    ->exists();
+    }
+
+    public function profileComments()
+    {
+        return $this->hasMany(ProfileComment::class, 'profile_user_id');
+    }
 }
