@@ -37,7 +37,7 @@
                         Edit Profile
                     </a>
                 @else
-                    @if(auth()->user()->isFriendsWith($user))
+                    @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="inline-flex items-center px-4 py-2 bg-green-100 border border-green-200 rounded-md font-semibold text-xs text-green-700 uppercase tracking-widest">
                                 Friends
@@ -215,290 +215,169 @@
             </div>
         </div>
     @endif
+
+    <!-- Comments Section -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6" 
+         x-data="comments()">
+        <h2 class="text-2xl font-bold mb-6">Comments</h2>
+
+        @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
+            <!-- Comment Form -->
+            <form @submit.prevent="submitComment" class="mb-6">
+                @csrf
+                <div x-data="{ comment: '' }">
+                    <textarea 
+                        x-model="comment"
+                        rows="3" 
+                        class="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200"
+                        placeholder="Write a comment..."
+                    ></textarea>
+                    <button 
+                        type="submit" 
+                        x-show="comment.length > 0"
+                        x-transition
+                        class="mt-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition duration-150 ease-in-out font-semibold">
+                        Post Comment
+                    </button>
+                </div>
+            </form>
+        @endif
+
+        <!-- Comments List -->
+        <div class="space-y-6">
+            <template x-for="comment in comments" :key="comment.id">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <template x-if="comment.user.profile_picture">
+                                <img :src="'/storage/' + comment.user.profile_picture" 
+                                     :alt="comment.user.name" 
+                                     class="w-8 h-8 rounded-full mr-2">
+                            </template>
+                            <template x-if="!comment.user.profile_picture">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2"
+                                     x-text="comment.user.name.charAt(0).toUpperCase()">
+                                </div>
+                            </template>
+                            <span class="font-medium" x-text="comment.user.name"></span>
+                        </div>
+                        <template x-if="canDeleteComment(comment)">
+                            <button @click="deleteComment(comment.id)" 
+                                    class="text-red-500 hover:text-red-600 text-sm">
+                                Delete
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-gray-700 mb-2" x-text="comment.content"></p>
+                    <span class="text-sm text-gray-500" x-text="formatDate(comment.created_at)"></span>
+                </div>
+            </template>
+        </div>
+    </div>
 </div>
 
-<style>
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
 
-.profile-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 40px;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+<script>
+function comments() {
+    return {
+        comments: [],
+        async init() {
+            await this.fetchComments();
+        },
+        async fetchComments() {
+            const response = await fetch(`/api/profile/{{ $user->id }}/comments`);
+            this.comments = await response.json();
+        },
+        async submitComment(e) {
+            const content = e.target.querySelector('textarea').value;
+            const response = await fetch(`/profile/{{ $user->id }}/comment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ content })
+            });
 
-.profile-info {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-}
+            if (response.ok) {
+                e.target.querySelector('textarea').value = '';
+                await this.fetchComments();
+            }
+        },
+        async submitReply(event, commentId) {
+            const content = event.target.querySelector('input').value;
+            
+            try {
+                const response = await fetch(`/comment/${commentId}/reply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
 
-.profile-picture, .default-profile-picture {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
-}
+                if (response.ok) {
+                    event.target.querySelector('input').value = '';
+                    await this.fetchComments();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Something went wrong');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to post reply');
+            }
+        },
+        async deleteComment(commentId) {
+            if (!confirm('Are you sure you want to delete this comment?')) return;
 
-.default-profile-picture {
-    background: #e0e0e0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
-    color: #666;
-}
+            const response = await fetch(`/profile/comment/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
 
-.user-details h1 {
-    margin: 0 0 10px 0;
-    color: #333;
-}
+            if (response.ok) {
+                await this.fetchComments();
+            }
+        },
+        async deleteReply(replyId, commentId) {
+            if (!confirm('Are you sure you want to delete this reply?')) return;
 
-.lastfm-link {
-    display: inline-block;
-    color: #d51007;
-    text-decoration: none;
-    margin-bottom: 10px;
-}
+            const response = await fetch(`/reply/${replyId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
 
-.bio {
-    color: #666;
-    margin: 0;
-}
-
-.edit-profile-btn {
-    background: #d51007;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    text-decoration: none;
-    transition: background-color 0.2s;
-}
-
-.edit-profile-btn:hover {
-    background: #b30d06;
-}
-
-.music-stats {
-    margin-top: 20px;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-.stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.stat-card h3 {
-    margin: 0 0 15px 0;
-    color: #333;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 10px;
-}
-
-.stat-item {
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.stat-item:last-child {
-    border-bottom: none;
-}
-
-.name {
-    display: block;
-    font-weight: 600;
-    color: #333;
-}
-
-.artist {
-    display: block;
-    color: #666;
-    font-size: 0.9em;
-}
-
-.count {
-    display: block;
-    color: #999;
-    font-size: 0.8em;
-}
-
-@media (max-width: 768px) {
-    .profile-header {
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .edit-profile-btn {
-        width: 100%;
-        text-align: center;
+            if (response.ok) {
+                await this.fetchComments();
+            }
+        },
+        canDeleteComment(comment) {
+            return {{ auth()->id() }} === comment.user_id || {{ auth()->id() }} === {{ $user->id }};
+        },
+        canDeleteReply(reply) {
+            return {{ auth()->id() }} === reply.user_id || {{ auth()->id() }} === {{ $user->id }};
+        },
+        formatDate(date) {
+            return new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
     }
 }
-
-.now-playing-section {
-    margin: 20px 0;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.now-playing {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.pulse-animation {
-    width: 10px;
-    height: 10px;
-    background: #1DB954;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.7);
-    }
-    70% {
-        transform: scale(1);
-        box-shadow: 0 0 0 10px rgba(29, 185, 84, 0);
-    }
-    100% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0);
-    }
-}
-
-.now-playing .track {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.now-playing .track img {
-    width: 60px;
-    height: 60px;
-    border-radius: 4px;
-    object-fit: cover;
-}
-
-.now-playing .track .name {
-    font-weight: 600;
-    display: block;
-}
-
-.now-playing .track .artist {
-    color: #666;
-    font-size: 0.9em;
-}
-
-.stats-overview {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin: 20px 0;
-}
-
-.total-scrobbles {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    text-align: center;
-}
-
-.total-scrobbles .count {
-    font-size: 2em;
-    font-weight: bold;
-    color: #1DB954;
-}
-
-.recent-tracks, .weekly-chart {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin: 20px 0;
-}
-
-.tracks-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 15px;
-}
-
-.track-card {
-    display: flex;
-    gap: 15px;
-    padding: 10px;
-    border: 1px solid #eee;
-    border-radius: 8px;
-}
-
-.track-card img {
-    width: 60px;
-    height: 60px;
-    border-radius: 4px;
-    object-fit: cover;
-}
-
-.track-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.track-info .name {
-    font-weight: 600;
-}
-
-.track-info .artist {
-    color: #666;
-    font-size: 0.9em;
-}
-
-.track-info .played-at {
-    color: #999;
-    font-size: 0.8em;
-}
-
-.chart-grid {
-    display: grid;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.chart-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.chart-item:last-child {
-    border-bottom: none;
-}
-
-.chart-item .count {
-    color: #666;
-}
-</style>
+</script>
+    <div class="fixed inset-0 -z-10 overflow-hidden">
+        <div class="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-purple-500/5 to-purple-500/5 animate-slow-spin"></div>
+        <div class="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-purple-500/5 to-purple-500/5 animate-slow-spin-reverse"></div>
+    </div>
 @endsection 
