@@ -1,0 +1,81 @@
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slow-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slow-spin-reverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    background: white;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    border-radius: 0 0 1rem 1rem;
+}
+
+.bg-white {
+    @apply rounded-xl shadow-sm overflow-hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.bg-white:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(147, 51, 234, 0.15);
+}
+
+.bg-white::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 100%
+    );
+    transform: skewX(-25deg);
+    transition: 0.5s;
+}
+
+.bg-white:hover::before {
+    left: 125%;
+}
+
+.weekly-tracks .bg-white {
+    @apply p-4 flex items-center gap-4;
+}
+
+.trending-artists .bg-white {
+    @apply p-4;
+}
+
+.text-purple-500 {
+    opacity: 0.8;
+}
+
+.fixed.inset-0 {
+    z-index: 0;
+}
+
+@media (max-width: 768px) {
+    .container {
+        border-radius: 0.5rem;
+    }
+}
+
+body {
+    min-height: 100vh;
+    background: transparent;
+} 
