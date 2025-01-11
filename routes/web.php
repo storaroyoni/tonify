@@ -8,6 +8,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SongController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\FriendRequestController;
+use App\Http\Controllers\ProfileCommentController;
+use App\Http\Controllers\CommentReplyController;
+use App\Http\Controllers\Api\ProfileCommentController as ApiProfileCommentController;
 use Illuminate\Support\Facades\Route;
 
 // last.fm routes
@@ -42,6 +45,15 @@ Route::get('/song/{name}/{artist}', [App\Http\Controllers\SongController::class,
 Route::get('/artist/{name}', [App\Http\Controllers\ArtistController::class, 'show'])->name('artist.show');
 
 Route::get('/search', [SearchController::class, 'search'])->name('search');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/api/profile/{user}/comments', [ApiProfileCommentController::class, 'index']);
+    
+    Route::post('/profile/{user}/comment', [ProfileCommentController::class, 'store']);
+    Route::delete('/profile/comment/{comment}', [ProfileCommentController::class, 'destroy']);
+    Route::post('/comment/{comment}/reply', [CommentReplyController::class, 'store']);
+    Route::delete('/reply/{reply}', [CommentReplyController::class, 'destroy']);
+});
 
 require __DIR__.'/auth.php';
 

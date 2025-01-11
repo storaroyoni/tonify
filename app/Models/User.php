@@ -156,4 +156,9 @@ class User extends Authenticatable
                     ->where('users.id', $user->id)
                     ->exists();
     }
+
+    public function profileComments()
+    {
+        return $this->hasMany(ProfileComment::class, 'profile_user_id');
+    }
 }
