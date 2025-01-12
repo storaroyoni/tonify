@@ -1,0 +1,34 @@
+/* Navigation container */
+.nav-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: white;
+    z-index: 50;
+    box-shadow: 0 4px 20px rgba(147, 51, 234, 0.1);
+}
+
+/* Enable clicking on all interactive elements */
+.nav-fixed button,
+.nav-fixed a,
+.nav-fixed input,
+.nav-fixed [x-data],
+.nav-fixed .relative {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Dropdown positioning */
+.nav-fixed #searchResults,
+.nav-fixed [x-show="notificationsOpen"],
+.nav-fixed [x-show="open"] {
+    position: absolute !important;
+    z-index: 1000 !important;
+}
+
+/* Ensure proper dropdown container */
+.nav-fixed .relative {
+    position: relative !important;
+} 
