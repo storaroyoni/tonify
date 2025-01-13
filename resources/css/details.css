@@ -1,0 +1,152 @@
+body {
+    background: #f5f3ff;
+    color: #1f2937;
+    font-family: 'Inter', sans-serif;
+}
+
+nav {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.nav-brand {
+    color: #7c3aed;
+    font-weight: 700;
+    font-size: 1.5rem;
+    text-decoration: none;
+}
+
+.song-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.album-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+.song-info {
+    padding-left: 2rem;
+}
+
+.song-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.artist-name {
+    font-size: 1.25rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.album-title {
+    font-size: 1rem;
+    color: #9ca3af;
+    margin-bottom: 1.5rem;
+}
+
+.song-description {
+    color: #4b5563;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.spotify-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #1DB954;
+    color: white;
+    border-radius: 9999px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.similar-tracks {
+    margin-top: 3rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+}
+
+.track-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.track-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.track-image {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.track-info {
+    margin-left: 1rem;
+}
+
+.track-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.track-artist {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.error-message {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 1rem;
+    border-radius: 0 8px 8px 0;
+}
+
+.error-text {
+    color: #92400e;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .song-card {
+        padding: 1.5rem;
+    }
+
+    .album-image {
+        width: 150px;
+        height: 150px;
+    }
+
+    .song-title {
+        font-size: 2rem;
+    }
+
+    .track-grid {
+        grid-template-columns: 1fr;
+    }
+} 

@@ -1,4 +1,9 @@
 <x-guest-layout>
+    <div class="text-center mb-4">
+        <h2 class="text-3xl font-bold text-purple-600">Join Tonify Today</h2>
+        <p class="mt-2 text-lg">Create your account and start exploring music</p>
+    </div>
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
@@ -40,11 +45,11 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
+            <a class="underline text-sm text-purple-600 hover:text-purple-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 
-            <x-primary-button class="ms-4">
+            <x-primary-button class="ms-4 bg-purple-600">
                 {{ __('Register') }}
             </x-primary-button>
         </div>
