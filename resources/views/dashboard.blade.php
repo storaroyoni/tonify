@@ -151,13 +151,4 @@
         </div>
     </div>
 </div>
-
-@if(auth()->check() && auth()->user()->isLastfmConnected())
-    <div class="mt-8 p-4 bg-gray-100 rounded">
-        <h3>Debug Image URLs:</h3>
-        <p>Artist Image: {{ session('user_top_artists')[0]['image_url'] ?? 'No image' }}</p>
-        <p>Album Image: {{ session('user_top_albums')[0]['image_url'] ?? 'No image' }}</p>
-        <p>Track Image: {{ session('user_top_tracks')[0]['image_url'] ?? 'No image' }}</p>
-    </div>
-@endif
 @endsection 
