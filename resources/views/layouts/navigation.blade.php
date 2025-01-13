@@ -3,7 +3,7 @@
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('home') }}" class="font-bold text-xl text-indigo-600">
+                    <a href="{{ route('home') }}" class="font-bold text-xl text-purple-600">
                         Tonify
                     </a>
                 </div>
@@ -24,12 +24,12 @@
 
             <div class="flex items-center space-x-4">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+                    <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700">
                         Dashboard
                     </a>
 
                     <div class="relative" x-data="{ notificationsOpen: false }">
-                        <button @click="notificationsOpen = !notificationsOpen" class="relative p-1 text-gray-600 hover:text-gray-900">
+                        <button @click="notificationsOpen = !notificationsOpen" class="relative p-1 text-gray-600">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                             </svg>
@@ -47,7 +47,7 @@
 
                         <div x-show="notificationsOpen" 
                              @click.away="notificationsOpen = false"
-                             class="absolute right-0 w-80 mt-2 bg-white rounded-md shadow-lg overflow-hidden z-50">
+                             class="absolute right-0 w-80 mt-2 bg-white rounded-md shadow-lg overflow-hidden z-50 focus:outline-none border-2 border-purple-500">
                             <div class="py-2">
                                 @php
                                     $requests = Auth::user()->receivedFriendRequests()
@@ -58,7 +58,7 @@
 
                                 @if($requests->count() > 0)
                                     @foreach($requests as $request)
-                                        <div class="px-4 py-3 hover:bg-gray-50 flex items-center justify-between">
+                                        <div class="px-4 py-3 flex items-center justify-between">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-8 w-8">
                                                     @if($request->sender->profile_picture)
@@ -107,7 +107,7 @@
                         </div>
                     </div>
 
-                    <div class="ml-3 relative" x-data="{ open: false }">
+                    <div class="ml-3 relative" x-data="{ open: false }" @click.outside="open = false">
                         <button @click="open = !open" class="flex items-center">
                             @if(Auth::user()->profile_picture)
                                 <img class="h-6 w-6 rounded-full object-cover" 
@@ -121,16 +121,16 @@
                         </button>
                         <div x-show="open" 
                              @click.away="open = false"
-                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none border-2 border-purple-500">
                             <div class="py-1" role="none">
                                 <a href="/profile/{{ Auth::user()->name }}" 
-                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                   class="block px-4 py-2 text-sm text-gray-700">
                                     Your Profile
                                 </a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <button type="submit" 
-                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700">
                                         Sign out
                                     </button>
                                 </form>
@@ -138,8 +138,8 @@
                         </div>
                     </div>
                 @else
-                    <a href="{{ route('login') }}" class="text-sm text-gray-700 hover:text-gray-900">Login</a>
-                    <a href="{{ route('register') }}" class="text-sm text-gray-700 hover:text-gray-900">Register</a>
+                    <a href="{{ route('login') }}" class="text-sm text-gray-700">Login</a>
+                    <a href="{{ route('register') }}" class="text-sm text-gray-700">Register</a>
                 @endauth
             </div>
         </div>
@@ -158,7 +158,6 @@
                 searchResults.classList.add('hidden');
                 return;
             }
-
             debounceTimeout = setTimeout(() => {
                 fetch(`/search?query=${encodeURIComponent(this.value)}`)
                     .then(response => response.json())
@@ -167,7 +166,7 @@
                             let html = '<div class="py-2">';
                             data.users.forEach(user => {
                                 html += `
-                                    <a href="${user.url}" class="flex items-center px-4 py-2 hover:bg-gray-100">
+                                    <a href="${user.url}" class="flex items-center px-4 py-2">
                                         ${user.profile_picture 
                                             ? `<img src="${user.profile_picture}" class="h-6 w-6 rounded-full object-cover mr-3">` 
                                             : `<div class="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center mr-3">

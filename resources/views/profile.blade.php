@@ -39,7 +39,8 @@
                 @else
                     @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
                         <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" class="inline-flex items-center px-4 py-2 bg-green-100 border border-green-200 rounded-md font-semibold text-xs text-green-700 uppercase tracking-widest">
+                            <button @click="open = !open" 
+                                    class="inline-flex items-center px-6 py-3 bg-purple-600 rounded-full font-semibold text-sm text-white uppercase tracking-widest hover:bg-purple-700 transition duration-150 ease-in-out w-[160px] justify-center">
                                 Friends
                                 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -48,17 +49,24 @@
                             
                             <div x-show="open" 
                                  @click.away="open = false"
-                                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="transform opacity-0 scale-95"
+                                 x-transition:enter-end="transform opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="transform opacity-100 scale-100"
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="absolute right-0 mt-2 w-[160px]">
                                 <form action="{{ route('friend.remove', $user) }}" method="POST" class="block w-full">
                                     @csrf
-                                    <button type="submit" class="w-full px-4 py-2 text-left text-xs font-semibold text-red-600 hover:bg-gray-50">
-                                        Remove Friend
+                                    <button type="submit" 
+                                            class="w-full px-6 py-3 text-sm font-semibold text-purple-600 uppercase transition duration-150 ease-in-out bg-white rounded-full shadow-lg hover:bg-purple-50 border-2 border-purple-500">
+                                        Remove
                                     </button>
                                 </form>
                             </div>
                         </div>
                     @elseif(auth()->user()->hasFriendRequestPending($user))
-                        <span class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-200 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest">
+                        <span class="inline-flex items-center px-6 py-3 bg-gray-100 rounded-full font-semibold text-sm text-gray-700 uppercase tracking-widest w-[160px] justify-center">
                             Request Sent
                         </span>
                     @elseif(auth()->user()->hasFriendRequestReceived($user))
@@ -222,7 +230,6 @@
         <h2 class="text-2xl font-bold mb-6">Comments</h2>
 
         @if(auth()->user()->isFriendsWith($user) || auth()->id() === $user->id)
-            <!-- Comment Form -->
             <form @submit.prevent="submitComment" class="mb-6">
                 @csrf
                 <div x-data="{ comment: '' }">
@@ -243,7 +250,6 @@
             </form>
         @endif
 
-        <!-- Comments List -->
         <div class="space-y-6">
             <template x-for="comment in comments" :key="comment.id">
                 <div class="bg-gray-50 rounded-lg p-4">

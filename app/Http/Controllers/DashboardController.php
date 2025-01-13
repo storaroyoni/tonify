@@ -26,15 +26,12 @@ class DashboardController extends Controller
         $user = auth()->user();
         
         if ($user && $user->isLastfmConnected()) {
-            $topTracks = session('user_top_tracks', []);
-            $topArtists = session('user_top_artists', []);
-            $topAlbums = session('user_top_albums', []);
-            
+            $topTracks = $this->lastFmService->getTopTracks($user->lastfm_username, 'overall');
+            $topArtists = $this->lastFmService->getTopArtists($user->lastfm_username, 'overall');
+            $topAlbums = $this->lastFmService->getTopAlbums($user->lastfm_username, 'overall');
             $recentTracks = $this->lastFmService->getRecentTracks($user->lastfm_username);
-            \Log::info('Recent tracks structure:', ['tracks' => $recentTracks]);
             
             $moodAnalysis = $this->moodAnalyzer->analyzeTracks($recentTracks);
-            \Log::info('Mood analysis result:', ['analysis' => $moodAnalysis]);
 
             return view('dashboard', compact('topTracks', 'topArtists', 'topAlbums', 'recentTracks', 'moodAnalysis'));
         }

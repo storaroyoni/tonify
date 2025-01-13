@@ -161,4 +161,37 @@ class User extends Authenticatable
     {
         return $this->hasMany(ProfileComment::class, 'profile_user_id');
     }
+
+    public function getAllTimeTopArtists($limit = 5)
+    {
+        return Artist::select('artists.*', \DB::raw('SUM(artist_user.play_count) as play_count'))
+                    ->join('artist_user', 'artists.id', '=', 'artist_user.artist_id')
+                    ->where('artist_user.user_id', $this->id)
+                    ->groupBy('artists.id')
+                    ->orderBy('play_count', 'DESC')
+                    ->limit($limit)
+                    ->get();
+    }
+
+    public function getAllTimeTopAlbums($limit = 5)
+    {
+        return Album::select('albums.*', \DB::raw('SUM(album_user.play_count) as play_count'))
+                   ->join('album_user', 'albums.id', '=', 'album_user.album_id')
+                   ->where('album_user.user_id', $this->id)
+                   ->groupBy('albums.id')
+                   ->orderBy('play_count', 'DESC')
+                   ->limit($limit)
+                   ->get();
+    }
+
+    public function getAllTimeTopTracks($limit = 5)
+    {
+        return Song::select('songs.*', \DB::raw('SUM(song_user.play_count) as play_count'))
+                   ->join('song_user', 'songs.id', '=', 'song_user.song_id')
+                   ->where('song_user.user_id', $this->id)
+                   ->groupBy('songs.id')
+                   ->orderBy('play_count', 'DESC')
+                   ->limit($limit)
+                   ->get();
+    }
 }

@@ -1,8 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white relative overflow-hidden">
+<div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-purple-500/5 to-purple-500/5 animate-slow-spin"></div>
+    <div class="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-purple-500/5 to-purple-500/5 animate-slow-spin-reverse"></div>
+</div>
+
+<div class="min-h-screen">
+    <div class="bg-gradient-to-r from-purple-600/90 to-purple-700/90 text-white relative overflow-hidden">
         <div class="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8 relative z-10">
             <h2 class="text-4xl font-extrabold tracking-tight text-center animate-fade-in">
                 Discover What's Trending in Music
@@ -17,7 +22,6 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 bg-white shadow-lg rounded-2xl -mt-8 relative z-20">
         <!-- Weekly Top Tracks -->
         <div class="mb-12">
@@ -95,9 +99,5 @@
             </div>
         </div>
     </div>
-    
-    <div class="fixed inset-0 -z-10 overflow-hidden">
-        <div class="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-purple-500/5 to-purple-500/5 animate-slow-spin"></div>
-        <div class="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-purple-500/5 to-purple-500/5 animate-slow-spin-reverse"></div>
-    </div>
+</div>
 @endsection

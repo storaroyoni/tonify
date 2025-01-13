@@ -15,21 +15,40 @@ class LastFmService
         $this->client = new Client();
     }
 
-    public function getTopTracks($user)
+    public function getTopTracks($user, $period = 'overall')
     {
-        $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
-            'query' => [
-                'method' => 'user.gettoptracks',
-                'user' => $user,
-                'api_key' => $this->apiKey,
-                'format' => 'json',
-            ],
-        ]);
+        try {
+            $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
+                'query' => [
+                    'method' => 'user.gettoptracks',
+                    'user' => $user,
+                    'api_key' => $this->apiKey,
+                    'format' => 'json',
+                    'period' => $period,
+                    'limit' => 5
+                ],
+            ]);
 
-        return json_decode($response->getBody()->getContents(), true);
+            $data = json_decode($response->getBody()->getContents(), true);
+            
+            if (isset($data['toptracks']['track'])) {
+                return array_map(function($track) {
+                    return [
+                        'name' => $track['name'],
+                        'artist' => $track['artist']['name'] ?? $track['artist']['#text'],
+                        'playcount' => $track['playcount'],
+                        'url' => $track['url']
+                    ];
+                }, $data['toptracks']['track']);
+            }
+            
+            return [];
+        } catch (\Exception $e) {
+            \Log::error('Error getting top tracks: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    // Add new method for recent tracks
     public function getRecentTracks($user)
     {
         try {
@@ -40,13 +59,12 @@ class LastFmService
                     'api_key' => $this->apiKey,
                     'format' => 'json',
                     'limit' => 50,
-                    'extended' => 1  // Get extended track info
+                    'extended' => 1  
                 ],
             ]);
 
             $data = json_decode($response->getBody()->getContents(), true);
             
-            // Log the full response for debugging
             \Log::info('Recent tracks response:', ['data' => $data]);
 
             if (isset($data['recenttracks']['track'])) {
@@ -85,32 +103,71 @@ class LastFmService
         return end($images)['#text'] ?? null;
     }
 
-    public function getTopAlbums($user)
+    public function getTopAlbums($user, $period = 'overall')
     {
-        $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
-            'query' => [
-                'method' => 'user.gettopalbums',
-                'user' => $user,
-                'api_key' => $this->apiKey,
-                'format' => 'json',
-            ],
-        ]);
+        try {
+            $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
+                'query' => [
+                    'method' => 'user.gettopalbums',
+                    'user' => $user,
+                    'api_key' => $this->apiKey,
+                    'format' => 'json',
+                    'period' => $period,
+                    'limit' => 5
+                ],
+            ]);
 
-        return json_decode($response->getBody()->getContents(), true);
+            $data = json_decode($response->getBody()->getContents(), true);
+            
+            if (isset($data['topalbums']['album'])) {
+                return array_map(function($album) {
+                    return [
+                        'name' => $album['name'],
+                        'artist' => $album['artist']['name'],
+                        'playcount' => $album['playcount'],
+                        'url' => $album['url']
+                    ];
+                }, $data['topalbums']['album']);
+            }
+            
+            return [];
+        } catch (\Exception $e) {
+            \Log::error('Error getting top albums: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    public function getTopArtists($user)
+    public function getTopArtists($user, $period = 'overall')
     {
-        $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
-            'query' => [
-                'method' => 'user.gettopartists',
-                'user' => $user,
-                'api_key' => $this->apiKey,
-                'format' => 'json',
-            ],
-        ]);
+        try {
+            $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
+                'query' => [
+                    'method' => 'user.gettopartists',
+                    'user' => $user,
+                    'api_key' => $this->apiKey,
+                    'format' => 'json',
+                    'period' => $period,
+                    'limit' => 5
+                ],
+            ]);
 
-        return json_decode($response->getBody()->getContents(), true);
+            $data = json_decode($response->getBody()->getContents(), true);
+            
+            if (isset($data['topartists']['artist'])) {
+                return array_map(function($artist) {
+                    return [
+                        'name' => $artist['name'],
+                        'playcount' => $artist['playcount'],
+                        'url' => $artist['url']
+                    ];
+                }, $data['topartists']['artist']);
+            }
+            
+            return [];
+        } catch (\Exception $e) {
+            \Log::error('Error getting top artists: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public function getSimilarArtists($artist)
@@ -127,7 +184,6 @@ class LastFmService
         return json_decode($response->getBody()->getContents(), true);
     }
 
-    // Get track tags for mood analysis
     public function getTrackTags($artist, $track)
     {
         try {
@@ -143,7 +199,6 @@ class LastFmService
 
             $data = json_decode($response->getBody()->getContents(), true);
             
-            // Log the response for debugging
             \Log::info('Last.fm tags response:', [
                 'artist' => $artist,
                 'track' => $track,
