@@ -3,10 +3,8 @@
 @section('content')
 <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
     @if($song)
-        <!-- Song Details Card -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <div class="flex items-start space-x-6">
-                <!-- Album Image -->
                 <div class="flex-shrink-0">
                     @if(isset($song['album']['image']))
                         <img class="w-24 h-24 rounded-md object-cover" 

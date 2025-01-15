@@ -7,104 +7,127 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use GuzzleHttp\Promise;
+use GuzzleHttp\Client;
 
 class ProfileController extends Controller
 {
+    protected $cacheTimeout = 180; 
+    protected $client;
+    protected $apiKey;
+
+    public function __construct()
+    {
+        $this->apiKey = config('services.lastfm.api_key');
+        $this->client = new Client([
+            'base_uri' => 'https://ws.audioscrobbler.com/2.0/',
+        ]);
+    }
+
     public function show($username)
     {
         $user = User::where('name', $username)->firstOrFail();
         $stats = [];
         
         if ($user->lastfm_username) {
-            $stats = $this->fetchUserStats($user);
+            $stats = Cache::remember("user_stats_{$user->id}", $this->cacheTimeout, function () use ($user) {
+                return $this->fetchUserData($user->lastfm_username);
+            });
         }
 
         return view('profile', compact('user', 'stats'));
     }
 
-    private function fetchUserStats($user)
+    private function createPromise($method, $params = [])
     {
-        $apiKey = config('services.lastfm.api_key');
-        
+        return $this->client->getAsync('', [
+            'query' => array_merge([
+                'method' => $method,
+                'api_key' => $this->apiKey,
+                'format' => 'json',
+            ], $params),
+        ]);
+    }
+
+    private function fetchUserData($name)
+    {
         try {
-            $nowPlayingResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.getrecenttracks',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json',
-                'limit' => 1
-            ]);
+            $promises = [
+                'nowPlaying' => $this->createPromise('user.getrecenttracks', [
+                    'user' => $name,
+                    'limit' => 1
+                ]),
+                'recent' => $this->createPromise('user.getrecenttracks', [
+                    'user' => $name,
+                    'limit' => 10
+                ]),
+                'info' => $this->createPromise('user.getinfo', [
+                    'user' => $name
+                ]),
+                'weeklyArtists' => $this->createPromise('user.getweeklyartistchart', [
+                    'user' => $name
+                ]),
+                'topTracks' => $this->createPromise('user.gettoptracks', [
+                    'user' => $name,
+                    'period' => '7day',
+                    'limit' => 5
+                ]),
+                'topArtists' => $this->createPromise('user.gettopartists', [
+                    'user' => $name,
+                    'period' => '7day',
+                    'limit' => 5
+                ]),
+                'topAlbums' => $this->createPromise('user.gettopalbums', [
+                    'user' => $name,
+                    'period' => '7day',
+                    'limit' => 5
+                ]),
+                'weeklyTracks' => $this->createPromise('user.getrecenttracks', [
+                    'user' => $name,
+                    'limit' => 200,
+                    'from' => now()->subWeek()->timestamp
+                ])
+            ];
 
-            \Log::info('Now Playing Response:', [
-                'data' => $nowPlayingResponse->json()
-            ]);
+            $responses = Promise\Utils::unwrap($promises);
+            
+            $recentTracks = [];
+            $recentData = json_decode($responses['recent']->getBody(), true);
+            if (isset($recentData['recenttracks']['track'])) {
+                $recentTracks = collect($recentData['recenttracks']['track'])
+                    ->filter(fn($track) => !isset($track['@attr']['nowplaying']))
+                    ->unique(fn($track) => $track['name'] . ' - ' . $track['artist']['#text'])
+                    ->map(function($track) {
+                        $image = null;
+                        
+                        if (isset($track['image'])) {
+                            foreach ($track['image'] as $img) {
+                                if ($img['size'] === 'extralarge' && !empty($img['#text'])) {
+                                    $image = $img['#text'];
+                                    break;
+                                }
+                            }
+                            
+                            if (!$image) {
+                                foreach ($track['image'] as $img) {
+                                    if ($img['size'] === 'large' && !empty($img['#text'])) {
+                                        $image = $img['#text'];
+                                        break;
+                                    }
+                                }
+                            }
+                        }
 
-            // check for now playing
-            if ($nowPlayingResponse->successful()) {
-                $track = $nowPlayingResponse['recenttracks']['track'][0] ?? null;
-                
-                if ($track) {
-                    \Log::info('Track details:', [
-                        'name' => $track['name'],
-                        'artist' => $track['artist']['#text'] ?? 'no artist',
-                        'has_nowplaying' => isset($track['@attr']['nowplaying']),
-                        'attr' => $track['@attr'] ?? 'no attr'
-                    ]);
-
-                    if (isset($track['@attr']['nowplaying']) && $track['@attr']['nowplaying'] === 'true') {
-                        $stats['now_playing'] = [
-                            'name' => $track['name'],
-                            'artist' => $track['artist']['#text'],
-                            'album' => $track['album']['#text'] ?? '',
-                            'image' => $track['image'][2]['#text'] ?? null,  // Using index 2 for medium size
-                            'url' => $track['url']
-                        ];
-                    }
-                }
-            }
-
-            $recentResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.getrecenttracks',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json',
-                'limit' => 10
-            ]);
-
-            $infoResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.getinfo',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json'
-            ]);
-
-            // Get Weekly Chart
-            $weeklyResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.getweeklyartistchart',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json'
-            ]);
-
-            if ($recentResponse->successful() && isset($recentResponse['recenttracks']['track'])) {
-                $tracks = collect($recentResponse['recenttracks']['track']);
-                
-                    $recentTracks = $tracks
-                    ->filter(function ($track) {
-                        return !isset($track['@attr']['nowplaying']);
-                    })
-                    ->unique(function ($track) {
-                        return $track['name'] . ' - ' . $track['artist']['#text'];
-                    })
-                    ->map(function ($track) {
                         return [
                             'name' => $track['name'],
                             'artist' => $track['artist']['#text'],
-                            'album' => $track['album']['#text'],
-                            'image' => $track['image'][2]['#text'] ?? null,
+                            'album' => $track['album']['#text'] ?? '',
+                            'image' => $image,
                             'url' => $track['url'],
-                            'played_at' => isset($track['date']) ? Carbon::createFromTimestamp($track['date']['uts'])->diffForHumans() : null
+                            'played_at' => isset($track['date']) ? 
+                                Carbon::createFromTimestamp($track['date']['uts'])->diffForHumans() : null
                         ];
                     })
                     ->take(4)
@@ -112,151 +135,59 @@ class ProfileController extends Controller
                     ->toArray();
             }
 
-            // total scrobbles
-            if ($infoResponse->successful() && isset($infoResponse['user'])) {
-                $totalScrobbles = $infoResponse['user']['playcount'];
-            }
+            $userInfo = json_decode($responses['info']->getBody(), true);
+            $totalScrobbles = $userInfo['user']['playcount'] ?? 0;
 
-            // weekly chart
-            if ($weeklyResponse->successful() && isset($weeklyResponse['weeklyartistchart']['artist'])) {
-                $weeklyChart = collect($weeklyResponse['weeklyartistchart']['artist'])
-                    ->take(10)
-                    ->map(function ($artist) {
-                        return [
-                            'name' => $artist['name'],
-                            'playcount' => $artist['playcount'],
-                            'url' => $artist['url']
-                        ];
-                    })->toArray();
-            }
+            $topTracksData = json_decode($responses['topTracks']->getBody(), true);
+            $topArtistsData = json_decode($responses['topArtists']->getBody(), true);
+            $topAlbumsData = json_decode($responses['topAlbums']->getBody(), true);
 
-            $tracksResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.gettoptracks',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json',
-                'period' => '7day',
-                'limit' => 50
-            ]);
-
-            $artistsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.gettopartists',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json',
-                'period' => '7day',
-                'limit' => 20
-            ]);
-
-            $albumsResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.gettopalbums',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json',
-                'period' => '7day',
-                'limit' => 20
-            ]);
-
-            if ($tracksResponse->successful() && isset($tracksResponse['toptracks']['track'])) {
-                $topTracks = collect($tracksResponse['toptracks']['track'])
-                    ->take(5)
-                    ->map(function ($track) {
-                        return [
+            $stats = [
+                'total_scrobbles' => $totalScrobbles,
+                'top_tracks' => isset($topTracksData['toptracks']['track']) ? 
+                    collect($topTracksData['toptracks']['track'])
+                        ->take(5)
+                        ->map(fn($track) => [
                             'name' => $track['name'],
                             'artist' => $track['artist']['name'],
                             'playcount' => $track['playcount'],
                             'url' => $track['url'],
-                        ];
-                    })->toArray();
-                session(['user_top_tracks' => $topTracks]);
-            }
-
-            if ($artistsResponse->successful() && isset($artistsResponse['topartists']['artist'])) {
-                $topArtists = collect($artistsResponse['topartists']['artist'])
-                    ->take(5)
-                    ->map(function ($artist) {
-                        return [
+                        ])->toArray() : [],
+                'top_artists' => isset($topArtistsData['topartists']['artist']) ?
+                    collect($topArtistsData['topartists']['artist'])
+                        ->take(5)
+                        ->map(fn($artist) => [
                             'name' => $artist['name'],
                             'playcount' => $artist['playcount'],
                             'url' => $artist['url'],
-                        ];
-                    })->toArray();
-                session(['user_top_artists' => $topArtists]);
-            }
-
-            if ($albumsResponse->successful() && isset($albumsResponse['topalbums']['album'])) {
-                $topAlbums = collect($albumsResponse['topalbums']['album'])
-                    ->take(5)
-                    ->map(function ($album) {
-                        return [
+                        ])->toArray() : [],
+                'top_albums' => isset($topAlbumsData['topalbums']['album']) ?
+                    collect($topAlbumsData['topalbums']['album'])
+                        ->take(5)
+                        ->map(fn($album) => [
                             'name' => $album['name'],
                             'artist' => $album['artist']['name'],
                             'playcount' => $album['playcount'],
                             'url' => $album['url'],
-                        ];
-                    })->toArray();
-                session(['user_top_albums' => $topAlbums]);
-            }
-
-            $recentTracksResponse = Http::get('https://ws.audioscrobbler.com/2.0/', [
-                'method' => 'user.getrecenttracks',
-                'user' => $user->lastfm_username,
-                'api_key' => $apiKey,
-                'format' => 'json',
-                'limit' => 200,  
-                'from' => now()->subWeek()->timestamp 
-            ]);
-
-            if ($recentTracksResponse->successful() && isset($recentTracksResponse['recenttracks']['track'])) {
-                $tracks = collect($recentTracksResponse['recenttracks']['track'])
-                    ->filter(function($track) {
-                        return !isset($track['@attr']['nowplaying']);
-                    });
-
-                $dailyListening = $tracks->groupBy(function($track) {
-                    return Carbon::createFromTimestamp($track['date']['uts'])->format('Y-m-d');
-                })->map->count();
-
-                $hourlyDistribution = $tracks->groupBy(function($track) {
-                    return Carbon::createFromTimestamp($track['date']['uts'])->format('H');
-                })->map->count();
-
-                $mostActiveHours = collect($hourlyDistribution)
-                    ->sortDesc()
-                    ->take(3)
-                    ->map(function($count, $hour) {
-                        return [
-                            'hour' => sprintf('%02d:00', $hour),
-                            'count' => $count
-                        ];
-                    });
-
-                // Add to stats array
-                $stats['listening_stats'] = [
-                    'daily_average' => round($tracks->count() / 7),  // Average tracks per day
-                    'total_week' => $tracks->count(),  // Total tracks this week
-                    'most_active_hours' => $mostActiveHours,
-                    'daily_breakdown' => $dailyListening
-                ];
-            }
-
-            return [
-                'now_playing' => $stats['now_playing'] ?? null,
-                'recent_tracks' => $recentTracks ?? [],
-                'total_scrobbles' => $totalScrobbles ?? 0,
-                'weekly_chart' => $weeklyChart ?? [],
-                'top_tracks' => $topTracks ?? [],
-                'top_artists' => $topArtists ?? [],
-                'top_albums' => $topAlbums ?? [],
-                'listening_stats' => $stats['listening_stats'] ?? null,
-                'fetched_at' => now()
+                        ])->toArray() : [],
+                'recent_tracks' => $recentTracks
             ];
 
+            session(['user_top_tracks' => $stats['top_tracks']]);
+            session(['user_top_artists' => $stats['top_artists']]);
+            session(['user_top_albums' => $stats['top_albums']]);
+
+            return $stats;
+
         } catch (\Exception $e) {
-            \Log::error('Error fetching Last.fm stats', [
-                'error' => $e->getMessage()
-            ]);
-            return [];
+            \Log::error('Error fetching user data: ' . $e->getMessage());
+            return [
+                'total_scrobbles' => 0,
+                'recent_tracks' => [],
+                'top_tracks' => [],
+                'top_artists' => [],
+                'top_albums' => []
+            ];
         }
     }
 
@@ -280,7 +211,6 @@ class ProfileController extends Controller
                 'original_name' => $request->file('profile_picture')->getClientOriginalName()
             ]);
 
-            // deleting the old profile picture if it exists
             if ($user->profile_picture) {
                 \Log::info('Deleting old profile picture', [
                     'path' => $user->profile_picture
@@ -288,7 +218,6 @@ class ProfileController extends Controller
                 Storage::disk('public')->delete($user->profile_picture);
             }
 
-            // storing the new profile picture
             $path = $request->file('profile_picture')->store('profile-pictures', 'public');
             \Log::info('Stored new profile picture', [
                 'path' => $path
@@ -302,3 +231,4 @@ class ProfileController extends Controller
             ->with('success', 'Profile updated successfully!');
     }
 }
+
