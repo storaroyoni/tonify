@@ -157,7 +157,7 @@
             <!-- Top Artists -->
             <div class="stat-card">
                 <h3>This Week's Top Artists</h3>
-                @foreach(session('user_top_artists', []) as $artist)
+                @foreach($stats['top_artists'] ?? [] as $artist)
                     <div class="stat-item">
                         <span class="name">{{ $artist['name'] }}</span>
                         <span class="count">{{ $artist['playcount'] }} plays</span>
@@ -168,7 +168,7 @@
             <!-- Top Albums -->
             <div class="stat-card">
                 <h3>This Week's Top Albums</h3>
-                @foreach(session('user_top_albums', []) as $album)
+                @foreach($stats['top_albums'] ?? [] as $album)
                     <div class="stat-item">
                         <span class="name">{{ $album['name'] }}</span>
                         <span class="artist">by {{ $album['artist'] }}</span>
@@ -179,8 +179,8 @@
 
             <!-- Top Tracks -->
             <div class="stat-card">
-                <h3>This Week'sTop Tracks</h3>
-                @foreach(session('user_top_tracks', []) as $track)
+                <h3>This Week's Top Tracks</h3>
+                @foreach($stats['top_tracks'] ?? [] as $track)
                     <div class="stat-item">
                         <span class="name">{{ $track['name'] }}</span>
                         <span class="artist">by {{ $track['artist'] }}</span>
