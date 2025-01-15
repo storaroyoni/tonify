@@ -28,7 +28,10 @@
             <h3 class="text-2xl font-bold mb-6 text-purple-900">Weekly Top Tracks</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($globalCharts['topTracks'] ?? [] as $track)
-                    <a href="{{ route('song.show', ['name' => $track['name'], 'artist' => $track['artist']]) }}" 
+                    <a href="{{ route('song.show', [
+                        'name' => rawurlencode($track['name']),
+                        'artist' => rawurlencode($track['artist'])
+                    ]) }}" 
                        class="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-4 border border-purple-100">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 w-20 h-20 overflow-hidden rounded-lg">

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
 
 class LastFmService
 {
@@ -15,75 +16,111 @@ class LastFmService
         $this->client = new Client();
     }
 
-    public function getTopTracks($user, $period = 'overall')
+    protected function createPromise($method, $params = [])
     {
-        try {
-            $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
-                'query' => [
-                    'method' => 'user.gettoptracks',
-                    'user' => $user,
-                    'api_key' => $this->apiKey,
-                    'format' => 'json',
-                    'period' => $period,
-                    'limit' => 5
-                ],
-            ]);
+        return $this->client->getAsync("http://ws.audioscrobbler.com/2.0/", [
+            'query' => array_merge([
+                'method' => $method,
+                'api_key' => $this->apiKey,
+                'format' => 'json',
+            ], $params),
+        ]);
+    }
 
-            $data = json_decode($response->getBody()->getContents(), true);
+    public function getParallelData($username, $period = 'overall')
+    {
+        $promises = [
+            'topTracks' => $this->createPromise('user.gettoptracks', [
+                'user' => $username,
+                'period' => $period,
+                'limit' => 5
+            ]),
+            'topArtists' => $this->createPromise('user.gettopartists', [
+                'user' => $username,
+                'period' => $period,
+                'limit' => 5
+            ]),
+            'topAlbums' => $this->createPromise('user.gettopalbums', [
+                'user' => $username,
+                'period' => $period,
+                'limit' => 5
+            ]),
+            'recentTracks' => $this->createPromise('user.getrecenttracks', [
+                'user' => $username,
+                'limit' => 50,
+                'extended' => 1
+            ])
+        ];
+
+        try {
+            $responses = Promise\Utils::unwrap($promises);
             
-            if (isset($data['toptracks']['track'])) {
-                return array_map(function($track) {
-                    return [
-                        'name' => $track['name'],
-                        'artist' => $track['artist']['name'] ?? $track['artist']['#text'],
-                        'playcount' => $track['playcount'],
-                        'url' => $track['url']
-                    ];
-                }, $data['toptracks']['track']);
-            }
-            
-            return [];
+            return [
+                'topTracks' => $this->processTopTracks($responses['topTracks']),
+                'topArtists' => $this->processTopArtists($responses['topArtists']),
+                'topAlbums' => $this->processTopAlbums($responses['topAlbums']),
+                'recentTracks' => $this->processRecentTracks($responses['recentTracks'])
+            ];
         } catch (\Exception $e) {
-            \Log::error('Error getting top tracks: ' . $e->getMessage());
-            return [];
+            \Log::error('Error in parallel requests: ' . $e->getMessage());
+            return [
+                'topTracks' => [],
+                'topArtists' => [],
+                'topAlbums' => [],
+                'recentTracks' => []
+            ];
         }
     }
 
-    public function getRecentTracks($user)
+    protected function processTopTracks($response)
     {
-        try {
-            $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
-                'query' => [
-                    'method' => 'user.getrecenttracks',
-                    'user' => $user,
-                    'api_key' => $this->apiKey,
-                    'format' => 'json',
-                    'limit' => 50,
-                    'extended' => 1  
-                ],
-            ]);
+        $data = json_decode($response->getBody()->getContents(), true);
+        return isset($data['toptracks']['track']) ? array_map(function($track) {
+            return [
+                'name' => $track['name'],
+                'artist' => $track['artist']['name'] ?? $track['artist']['#text'],
+                'playcount' => $track['playcount'],
+                'url' => $track['url']
+            ];
+        }, $data['toptracks']['track']) : [];
+    }
 
-            $data = json_decode($response->getBody()->getContents(), true);
-            
-            \Log::info('Recent tracks response:', ['data' => $data]);
+    protected function processTopArtists($response)
+    {
+        $data = json_decode($response->getBody()->getContents(), true);
+        return isset($data['topartists']['artist']) ? array_map(function($artist) {
+            return [
+                'name' => $artist['name'],
+                'playcount' => $artist['playcount'],
+                'url' => $artist['url']
+            ];
+        }, $data['topartists']['artist']) : [];
+    }
 
-            if (isset($data['recenttracks']['track'])) {
-                $tracks = $data['recenttracks']['track'];
-                return array_map(function($track) {
-                    return [
-                        'name' => $track['name'],
-                        'artist' => $track['artist']['name'] ?? $track['artist']['#text'],
-                        'image' => $this->getLargestImage($track['image'] ?? []),
-                        'url' => $track['url']
-                    ];
-                }, $tracks);
-            }
-            
-            return [];
-        } catch (\Exception $e) {
-            \Log::error('Error getting recent tracks: ' . $e->getMessage());
-            return [];
-        }
+    protected function processTopAlbums($response)
+    {
+        $data = json_decode($response->getBody()->getContents(), true);
+        return isset($data['topalbums']['album']) ? array_map(function($album) {
+            return [
+                'name' => $album['name'],
+                'artist' => $album['artist']['name'],
+                'playcount' => $album['playcount'],
+                'url' => $album['url']
+            ];
+        }, $data['topalbums']['album']) : [];
+    }
+
+    protected function processRecentTracks($response)
+    {
+        $data = json_decode($response->getBody()->getContents(), true);
+        return isset($data['recenttracks']['track']) ? array_map(function($track) {
+            return [
+                'name' => $track['name'],
+                'artist' => $track['artist']['name'] ?? $track['artist']['#text'],
+                'image' => $this->getLargestImage($track['image'] ?? []),
+                'url' => $track['url']
+            ];
+        }, $data['recenttracks']['track']) : [];
     }
 
     private function getLargestImage($images)
@@ -101,73 +138,6 @@ class LastFmService
         }
 
         return end($images)['#text'] ?? null;
-    }
-
-    public function getTopAlbums($user, $period = 'overall')
-    {
-        try {
-            $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
-                'query' => [
-                    'method' => 'user.gettopalbums',
-                    'user' => $user,
-                    'api_key' => $this->apiKey,
-                    'format' => 'json',
-                    'period' => $period,
-                    'limit' => 5
-                ],
-            ]);
-
-            $data = json_decode($response->getBody()->getContents(), true);
-            
-            if (isset($data['topalbums']['album'])) {
-                return array_map(function($album) {
-                    return [
-                        'name' => $album['name'],
-                        'artist' => $album['artist']['name'],
-                        'playcount' => $album['playcount'],
-                        'url' => $album['url']
-                    ];
-                }, $data['topalbums']['album']);
-            }
-            
-            return [];
-        } catch (\Exception $e) {
-            \Log::error('Error getting top albums: ' . $e->getMessage());
-            return [];
-        }
-    }
-
-    public function getTopArtists($user, $period = 'overall')
-    {
-        try {
-            $response = $this->client->get("http://ws.audioscrobbler.com/2.0/", [
-                'query' => [
-                    'method' => 'user.gettopartists',
-                    'user' => $user,
-                    'api_key' => $this->apiKey,
-                    'format' => 'json',
-                    'period' => $period,
-                    'limit' => 5
-                ],
-            ]);
-
-            $data = json_decode($response->getBody()->getContents(), true);
-            
-            if (isset($data['topartists']['artist'])) {
-                return array_map(function($artist) {
-                    return [
-                        'name' => $artist['name'],
-                        'playcount' => $artist['playcount'],
-                        'url' => $artist['url']
-                    ];
-                }, $data['topartists']['artist']);
-            }
-            
-            return [];
-        } catch (\Exception $e) {
-            \Log::error('Error getting top artists: ' . $e->getMessage());
-            return [];
-        }
     }
 
     public function getSimilarArtists($artist)
