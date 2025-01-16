@@ -142,8 +142,34 @@ class ProfileController extends Controller
             $topArtistsData = json_decode($responses['topArtists']->getBody(), true);
             $topAlbumsData = json_decode($responses['topAlbums']->getBody(), true);
 
+            $nowPlaying = null;
+            $nowPlayingData = json_decode($responses['nowPlaying']->getBody(), true);
+            if (isset($nowPlayingData['recenttracks']['track'][0]['@attr']['nowplaying'])) {
+                $track = $nowPlayingData['recenttracks']['track'][0];
+                $image = null;
+                
+                if (isset($track['image'])) {
+                    foreach ($track['image'] as $img) {
+                        if ($img['size'] === 'extralarge' && !empty($img['#text'])) {
+                            $image = $img['#text'];
+                            break;
+                        }
+                    }
+                }
+
+                $nowPlaying = [
+                    'name' => $track['name'],
+                    'artist' => $track['artist']['#text'],
+                    'album' => $track['album']['#text'] ?? '',
+                    'image' => $image,
+                    'url' => $track['url']
+                ];
+            }
+
             $stats = [
+                'now_playing' => $nowPlaying,
                 'total_scrobbles' => $totalScrobbles,
+                'recent_tracks' => $recentTracks,
                 'top_tracks' => isset($topTracksData['toptracks']['track']) ? 
                     collect($topTracksData['toptracks']['track'])
                         ->take(5)
@@ -170,7 +196,6 @@ class ProfileController extends Controller
                             'playcount' => $album['playcount'],
                             'url' => $album['url'],
                         ])->toArray() : [],
-                'recent_tracks' => $recentTracks
             ];
 
             session(['user_top_tracks' => $stats['top_tracks']]);
@@ -182,6 +207,7 @@ class ProfileController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error fetching user data: ' . $e->getMessage());
             return [
+                'now_playing' => null,
                 'total_scrobbles' => 0,
                 'recent_tracks' => [],
                 'top_tracks' => [],

@@ -107,24 +107,27 @@
     </div>
 
     @if(isset($stats['now_playing']))
-        <div class="now-playing-section">
-            <div class="now-playing">
-                <div class="pulse-animation"></div>
-                <div class="track-info">
-                    <h3>Now Playing</h3>
-                    <div class="track">
-                        @if(isset($stats['now_playing']['image']))
-                            <img src="{{ $stats['now_playing']['image'] }}" alt="Album Art">
+    <div class="now-playing-section">
+        <div class="now-playing">
+            <div class="pulse-animation"></div>
+            <div class="track-info">
+                <h3>Now Playing</h3>
+                <div class="track">
+                    @if(isset($stats['now_playing']['image']))
+                        <img src="{{ $stats['now_playing']['image'] }}" alt="Album Art">
+                    @endif
+                    <div>
+                        <span class="name">{{ $stats['now_playing']['name'] }}</span>
+                        <span class="artist">by {{ $stats['now_playing']['artist'] }}</span>
+                        @if(isset($stats['now_playing']['album']))
+                            <span class="artist">on {{ $stats['now_playing']['album'] }}</span>
                         @endif
-                        <div>
-                            <span class="name">{{ $stats['now_playing']['name'] }}</span>
-                            <span class="artist">by {{ $stats['now_playing']['artist'] }}</span>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    @endif
+    </div>
+@endif
 
     <div class="stats-overview">
         <div class="total-scrobbles">
@@ -387,3 +390,4 @@ function comments() {
         <div class="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-purple-500/5 to-purple-500/5 animate-slow-spin-reverse"></div>
     </div>
 @endsection 
+

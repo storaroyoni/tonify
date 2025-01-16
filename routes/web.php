@@ -53,6 +53,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile/comment/{comment}', [ProfileCommentController::class, 'destroy']);
     Route::post('/comment/{comment}/reply', [CommentReplyController::class, 'store']);
     Route::delete('/reply/{reply}', [CommentReplyController::class, 'destroy']);
+    
 });
 
 require __DIR__.'/auth.php';
