@@ -313,32 +313,6 @@ function comments() {
                 await this.fetchComments();
             }
         },
-        async submitReply(event, commentId) {
-            const content = event.target.querySelector('input').value;
-            
-            try {
-                const response = await fetch(`/comment/${commentId}/reply`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ content })
-                });
-
-                if (response.ok) {
-                    event.target.querySelector('input').value = '';
-                    await this.fetchComments();
-                } else {
-                    const error = await response.json();
-                    alert(error.message || 'Something went wrong');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to post reply');
-            }
-        },
         async deleteComment(commentId) {
             if (!confirm('Are you sure you want to delete this comment?')) return;
 
@@ -353,25 +327,8 @@ function comments() {
                 await this.fetchComments();
             }
         },
-        async deleteReply(replyId, commentId) {
-            if (!confirm('Are you sure you want to delete this reply?')) return;
-
-            const response = await fetch(`/reply/${replyId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            });
-
-            if (response.ok) {
-                await this.fetchComments();
-            }
-        },
         canDeleteComment(comment) {
-            return {{ auth()->id() }} === comment.user_id || {{ auth()->id() }} === {{ $user->id }};
-        },
-        canDeleteReply(reply) {
-            return {{ auth()->id() }} === reply.user_id || {{ auth()->id() }} === {{ $user->id }};
+            return {{ auth()->id() }} === comment.user_id || {{ auth()->id() }} === comment.profile_user_id;
         },
         formatDate(date) {
             return new Date(date).toLocaleDateString('en-US', {

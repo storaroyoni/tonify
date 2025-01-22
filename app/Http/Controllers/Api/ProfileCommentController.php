@@ -11,11 +11,11 @@ class ProfileCommentController extends Controller
 {
     public function index(User $user)
     {
-        $comments = $user->profileComments()
-            ->with(['user', 'replies.user'])
+        $comments = ProfileComment::with('user')
+            ->where('profile_user_id', $user->id)
             ->latest()
             ->get();
-
+            
         return response()->json($comments);
     }
 } 

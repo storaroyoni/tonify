@@ -19,24 +19,21 @@ class ProfileCommentController extends Controller
         ]);
 
         $comment = ProfileComment::create([
-            'content' => $validated['content'],
             'user_id' => auth()->id(),
-            'profile_user_id' => $user->id
+            'profile_user_id' => $user->id,
+            'content' => $validated['content']
         ]);
 
-        $comment->load('user');
-
-        return response()->json($comment);
+        return response()->json($comment->load('user'));
     }
 
     public function destroy(ProfileComment $comment)
     {
-        if (auth()->id() === $comment->user_id || 
-            auth()->id() === $comment->profile_user_id) {
+        if (auth()->id() === $comment->user_id || auth()->id() === $comment->profile_user_id) {
             $comment->delete();
-            return response()->json(['message' => 'Comment deleted successfully']);
+            return response()->json(['message' => 'Comment deleted']);
         }
 
-        return response()->json(['error' => 'Unauthorized action'], 403);
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
 } 

@@ -18,8 +18,4 @@ class ProfileComment extends Model
         return $this->belongsTo(User::class, 'profile_user_id');
     }
 
-    public function replies()
-    {
-        return $this->hasMany(CommentReply::class, 'comment_id');
-    }
 } 
