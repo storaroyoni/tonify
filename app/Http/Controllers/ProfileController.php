@@ -256,5 +256,58 @@ class ProfileController extends Controller
         return redirect()->route('profile.show', $user->name)
             ->with('success', 'Profile updated successfully!');
     }
+
+    public function getNowPlaying($username)
+    {
+        $user = User::where('name', $username)->firstOrFail();
+        
+        if (!$user->lastfm_username) {
+            return response()->json(['now_playing' => null]);
+        }
+
+        try {
+            $response = $this->client->get('', [
+                'query' => [
+                    'method' => 'user.getrecenttracks',
+                    'user' => $user->lastfm_username,
+                    'limit' => 1,
+                    'api_key' => $this->apiKey,
+                    'format' => 'json',
+                ],
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            
+            if (isset($data['recenttracks']['track'][0]['@attr']['nowplaying'])) {
+                $track = $data['recenttracks']['track'][0];
+                $image = null;
+                
+                if (isset($track['image'])) {
+                    foreach ($track['image'] as $img) {
+                        if ($img['size'] === 'extralarge' && !empty($img['#text'])) {
+                            $image = $img['#text'];
+                            break;
+                        }
+                    }
+                }
+
+                return response()->json([
+                    'now_playing' => [
+                        'name' => $track['name'],
+                        'artist' => $track['artist']['#text'],
+                        'album' => $track['album']['#text'] ?? '',
+                        'image' => $image,
+                        'url' => $track['url']
+                    ]
+                ]);
+            }
+
+            return response()->json(['now_playing' => null]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching now playing: ' . $e->getMessage());
+            return response()->json(['now_playing' => null]);
+        }
+    }
 }
 
