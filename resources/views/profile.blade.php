@@ -106,28 +106,30 @@
         </div>
     </div>
 
-    @if(isset($stats['now_playing']))
-    <div class="now-playing-section">
-        <div class="now-playing">
-            <div class="pulse-animation"></div>
-            <div class="track-info">
-                <h3>Now Playing</h3>
-                <div class="track">
-                    @if(isset($stats['now_playing']['image']))
-                        <img src="{{ $stats['now_playing']['image'] }}" alt="Album Art">
-                    @endif
-                    <div>
-                        <span class="name">{{ $stats['now_playing']['name'] }}</span>
-                        <span class="artist">by {{ $stats['now_playing']['artist'] }}</span>
-                        @if(isset($stats['now_playing']['album']))
-                            <span class="artist">on {{ $stats['now_playing']['album'] }}</span>
-                        @endif
+    <div id="now-playing-container">
+        @if(isset($stats['now_playing']))
+            <div class="now-playing-section">
+                <div class="now-playing">
+                    <div class="pulse-animation"></div>
+                    <div class="track-info">
+                        <h3>Now Playing</h3>
+                        <div class="track">
+                            @if(isset($stats['now_playing']['image']))
+                                <img src="{{ $stats['now_playing']['image'] }}" alt="Album Art">
+                            @endif
+                            <div>
+                                <span class="name">{{ $stats['now_playing']['name'] }}</span>
+                                <span class="artist">by {{ $stats['now_playing']['artist'] }}</span>
+                                @if(isset($stats['now_playing']['album']))
+                                    <span class="artist">on {{ $stats['now_playing']['album'] }}</span>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        @endif
     </div>
-@endif
 
     <div class="stats-overview">
         <div class="total-scrobbles">
@@ -341,6 +343,52 @@ function comments() {
         }
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const username = '{{ $user->name }}';
+    const nowPlayingContainer = document.getElementById('now-playing-container');
+    
+    function updateNowPlaying() {
+        fetch(`/now-playing/${username}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.now_playing) {
+                    nowPlayingContainer.innerHTML = `
+                        <div class="now-playing-section">
+                            <div class="now-playing">
+                                <div class="pulse-animation"></div>
+                                <div class="track-info">
+                                    <h3>Now Playing</h3>
+                                    <div class="track">
+                                        ${data.now_playing.image ? 
+                                            `<img src="${data.now_playing.image}" alt="Album Art">` : 
+                                            ''
+                                        }
+                                        <div>
+                                            <span class="name">${data.now_playing.name}</span>
+                                            <span class="artist">by ${data.now_playing.artist}</span>
+                                            ${data.now_playing.album ? 
+                                                `<span class="artist">on ${data.now_playing.album}</span>` : 
+                                                ''
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    nowPlayingContainer.innerHTML = ''; 
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching now playing:', error);
+            });
+    }
+
+    updateNowPlaying();
+    setInterval(updateNowPlaying, 5000);
+});
 </script>
     <div class="fixed inset-0 -z-10 overflow-hidden">
         <div class="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-purple-500/5 to-purple-500/5 animate-slow-spin"></div>
